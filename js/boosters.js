@@ -7,10 +7,213 @@ let currentFilters = {
   word: 'all',
   sort: 'name-asc'
 };
+let edits = {};
+let editingId = null;
+let annotationMenu = null;
 
 async function loadData() {
   data = await fetch('data/boosters.json').then(r => r.json());
+  loadEdits();
+  setupAutoBackup();
   render();
+}
+
+function loadEdits() {
+  const stored = localStorage.getItem('corpus_edits');
+  if (stored) {
+    try {
+      edits = JSON.parse(stored);
+    } catch(e) {
+      console.error('Failed to load edits:', e);
+      edits = {};
+    }
+  }
+}
+
+function saveEdits() {
+  localStorage.setItem('corpus_edits', JSON.stringify(edits));
+}
+
+function setupAutoBackup() {
+  window.addEventListener('beforeunload', (e) => {
+    if (Object.keys(edits).length > 0) {
+      downloadEdits();
+    }
+  });
+}
+
+function downloadEdits() {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const blob = new Blob([JSON.stringify(edits, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `edits_backup_${timestamp}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportEdits() {
+  if (Object.keys(edits).length === 0) {
+    alert('No edits to export');
+    return;
+  }
+  downloadEdits();
+  alert('Edits exported successfully!');
+}
+
+function getEditedCount() {
+  return Object.keys(edits).length;
+}
+
+function toggleEdit(id) {
+  if (editingId === id) {
+    editingId = null;
+    closeAnnotationMenu();
+  } else {
+    editingId = id;
+    closeAnnotationMenu();
+  }
+  render();
+}
+
+function handleTextSelection(e, id, item) {
+  if (editingId !== id) return;
+  
+  const selection = window.getSelection();
+  const selectedText = selection.toString().trim();
+  
+  if (selectedText.length > 0) {
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    showAnnotationMenu(rect, selectedText, id, item);
+  }
+}
+
+function showAnnotationMenu(rect, text, id, item) {
+  closeAnnotationMenu();
+  
+  const menu = document.createElement('div');
+  menu.className = 'annotation-menu';
+  menu.style.left = rect.left + window.scrollX + 'px';
+  menu.style.top = rect.bottom + window.scrollY + 5 + 'px';
+  
+  const currentEdit = edits[id] || {};
+  const editedBoosters = currentEdit.edited_boosters || item.originalBoosters || [];
+  const editedHedges = currentEdit.edited_hedges || item.originalHedges || [];
+  
+  const isBooster = editedBoosters.includes(text);
+  const isHedge = editedHedges.includes(text);
+  
+  menu.innerHTML = `
+    <div style="margin-bottom: 10px; font-weight: 600; color: #666;">Selected text:</div>
+    <input type="text" id="annotationInput" value="${text}" />
+    <button class="btn-booster" onclick="addAnnotation('${id}', 'booster')">✅ Mark as Booster</button>
+    <button class="btn-hedge" onclick="addAnnotation('${id}', 'hedge')">⚠️ Mark as Hedge</button>
+    ${isBooster || isHedge ? '<button class="btn-remove" onclick="removeAnnotation(\''+id+'\')">❌ Remove Mark</button>' : ''}
+    <button class="btn-cancel" onclick="closeAnnotationMenu()">Cancel</button>
+  `;
+  
+  document.body.appendChild(menu);
+  annotationMenu = menu;
+  
+  document.getElementById('annotationInput').focus();
+}
+
+function closeAnnotationMenu() {
+  if (annotationMenu) {
+    annotationMenu.remove();
+    annotationMenu = null;
+  }
+}
+
+function addAnnotation(id, type) {
+  const input = document.getElementById('annotationInput');
+  if (!input) return;
+  
+  const word = input.value.trim();
+  if (!word) return;
+  
+  const item = data.find(i => i.id === id);
+  if (!item) return;
+  
+  if (!edits[id]) {
+    edits[id] = {
+      original_boosters: item.originalBoosters || [],
+      original_hedges: item.originalHedges || [],
+      edited_boosters: [...(item.originalBoosters || [])],
+      edited_hedges: [...(item.originalHedges || [])],
+      timestamp: new Date().toISOString()
+    };
+  }
+  
+  if (type === 'booster') {
+    if (!edits[id].edited_boosters.includes(word)) {
+      edits[id].edited_boosters.push(word);
+    }
+    edits[id].edited_hedges = edits[id].edited_hedges.filter(w => w !== word);
+  } else {
+    if (!edits[id].edited_hedges.includes(word)) {
+      edits[id].edited_hedges.push(word);
+    }
+    edits[id].edited_boosters = edits[id].edited_boosters.filter(w => w !== word);
+  }
+  
+  edits[id].timestamp = new Date().toISOString();
+  saveEdits();
+  closeAnnotationMenu();
+  render();
+}
+
+function removeAnnotation(id) {
+  const input = document.getElementById('annotationInput');
+  if (!input) return;
+  
+  const word = input.value.trim();
+  if (!word) return;
+  
+  if (edits[id]) {
+    edits[id].edited_boosters = edits[id].edited_boosters.filter(w => w !== word);
+    edits[id].edited_hedges = edits[id].edited_hedges.filter(w => w !== word);
+    edits[id].timestamp = new Date().toISOString();
+    saveEdits();
+  }
+  
+  closeAnnotationMenu();
+  render();
+}
+
+function highlightWithEdits(text, item) {
+  const edit = edits[item.id];
+  const originalBoosters = item.originalBoosters || [];
+  const originalHedges = item.originalHedges || [];
+  const editedBoosters = edit ? edit.edited_boosters : originalBoosters;
+  const editedHedges = edit ? edit.edited_hedges : originalHedges;
+  
+  const newBoosters = editedBoosters.filter(w => !originalBoosters.includes(w));
+  const newHedges = editedHedges.filter(w => !originalHedges.includes(w));
+  const removedBoosters = originalBoosters.filter(w => !editedBoosters.includes(w));
+  const removedHedges = originalHedges.filter(w => !editedHedges.includes(w));
+  
+  let result = text;
+  
+  const allWords = [
+    ...newBoosters.map(w => ({word: w, type: 'booster-new'})),
+    ...newHedges.map(w => ({word: w, type: 'hedge-new'})),
+    ...editedBoosters.filter(w => originalBoosters.includes(w)).map(w => ({word: w, type: 'booster'})),
+    ...editedHedges.filter(w => originalHedges.includes(w)).map(w => ({word: w, type: 'hedge'})),
+    ...removedBoosters.map(w => ({word: w, type: 'removed'})),
+    ...removedHedges.map(w => ({word: w, type: 'removed'}))
+  ];
+  
+  allWords.sort((a, b) => b.word.length - a.word.length);
+  
+  allWords.forEach(({word, type}) => {
+    const regex = new RegExp('\\b' + word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi');
+    result = result.replace(regex, `<span class="highlight-${type}">${word}</span>`);
+  });
+  
+  return result;
 }
 
 function attachListeners() {
@@ -18,6 +221,12 @@ function attachListeners() {
     const el = document.getElementById(id);
     if (el) {
       el.addEventListener('change', handleFilterChange);
+    }
+  });
+  
+  document.addEventListener('click', (e) => {
+    if (annotationMenu && !annotationMenu.contains(e.target)) {
+      closeAnnotationMenu();
     }
   });
 }
@@ -86,6 +295,13 @@ function render() {
   const words = [...allWords].sort();
   
   const html = `
+    <div class="edit-toolbar">
+      <div class="edit-info">
+        Edited items: <span class="edit-count">${getEditedCount()}</span>
+      </div>
+      <button class="export-btn" onclick="exportEdits()">📥 Export Edits</button>
+    </div>
+  
     <div class="controls">
       <div class="filters">
         <div class="filter-group">
@@ -161,25 +377,38 @@ function render() {
     
     <div id="cards">
       ${pageData.length === 0 ? '<div class="no-results">No results</div>' : 
-        pageData.map(item => `
-          <div class="card booster">
-            <div class="card-header">
-              <div class="card-name">${item.name}</div>
-              <div class="badges">
-                <span class="badge badge-${item.gender.toLowerCase()}">${item.gender}</span>
-                <span class="badge badge-native">${item.nativeness}</span>
-                <span class="badge badge-price">$${item.price}</span>
+        pageData.map(item => {
+          const isEdited = !!edits[item.id];
+          const isEditing = editingId === item.id;
+          const displayText = isEdited ? highlightWithEdits(item.plainSentence, item) : item.sentence;
+          
+          return `
+            <div class="card booster ${isEdited ? 'edited' : ''}">
+              ${isEdited ? '<div class="edited-badge">✏️ Edited</div>' : ''}
+              <div class="card-header">
+                <div class="card-name">${item.name}</div>
+                <div class="badges">
+                  <span class="badge badge-${item.gender.toLowerCase()}">${item.gender}</span>
+                  <span class="badge badge-native">${item.nativeness}</span>
+                  <span class="badge badge-price">$${item.price}</span>
+                </div>
               </div>
+              <div class="card-meta">
+                <span>${item.language}</span>
+                <span>${item.country}</span>
+                <span>Sentence ${item.sentenceIndex + 1}</span>
+                <span>B: ${item.boosterCount} | H: ${item.hedgeCount}</span>
+              </div>
+              <div class="text-content ${isEditing ? 'editing' : ''}" 
+                   onmouseup="handleTextSelection(event, '${item.id}', ${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                ${displayText}
+              </div>
+              <button class="edit-btn ${isEditing ? 'active' : ''}" onclick="toggleEdit('${item.id}')">
+                ${isEditing ? '✓ Done Editing' : '✏️ Edit Annotations'}
+              </button>
             </div>
-            <div class="card-meta">
-              <span>${item.language}</span>
-              <span>${item.country}</span>
-              <span>Sentence ${item.sentenceIndex + 1}</span>
-              <span>B: ${item.boosterCount} | H: ${item.hedgeCount}</span>
-            </div>
-            <div class="text-content">${item.sentence}</div>
-          </div>
-        `).join('')
+          `;
+        }).join('')
       }
     </div>
   `;
