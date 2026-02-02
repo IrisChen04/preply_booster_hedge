@@ -27,10 +27,20 @@ function populateFilters() {
   addOptions('wordFilter', [...allWords]);
 }
 
-['genderFilter', 'languageFilter', 'countryFilter', 'nativenessFilter', 'wordFilter', 'sortFilter'].forEach(id => {
-  const el = document.getElementById(id);
-  if (el) el.addEventListener('change', () => { currentPage = 1; updateDisplay(); });
-});
+function attachListeners() {
+  ['genderFilter', 'languageFilter', 'countryFilter', 'nativenessFilter', 'wordFilter', 'sortFilter'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.removeEventListener('change', handleFilterChange);
+      el.addEventListener('change', handleFilterChange);
+    }
+  });
+}
+
+function handleFilterChange() {
+  currentPage = 1;
+  updateDisplay();
+}
 
 function changePageSize() {
   pageSize = parseInt(document.getElementById('pageSize').value);
@@ -87,7 +97,7 @@ function updateDisplay() {
 function render(pageData) {
   const app = document.getElementById('app');
   
-  const controlsHtml = `
+  const html = `
     <div class="controls">
       <div class="filters">
         <div class="filter-group">
@@ -125,13 +135,13 @@ function render(pageData) {
     </div>
     
     <div class="stats">
-      <div class="stat"><span class="stat-label">Total:</span><span class="stat-value">{data.length}</span></div>
-      <div class="stat"><span class="stat-label">Filtered:</span><span class="stat-value">{filtered.length}</span></div>
-      <div class="stat"><span class="stat-label">Displayed:</span><span class="stat-value">{pageData.length}</span></div>
+      <div class="stat"><span class="stat-label">Total:</span><span class="stat-value">${data.length}</span></div>
+      <div class="stat"><span class="stat-label">Filtered:</span><span class="stat-value">${filtered.length}</span></div>
+      <div class="stat"><span class="stat-label">Displayed:</span><span class="stat-value">${pageData.length}</span></div>
     </div>
     
     <div class="pagination">
-      <div>Page {currentPage} of {totalPages}</div>
+      <div>Page ${currentPage} of ${totalPages}</div>
       <div>
         <button class="page-btn" onclick="goToPage(1)">First</button>
         <button class="page-btn" onclick="goToPage(currentPage-1)">Prev</button>
@@ -145,32 +155,36 @@ function render(pageData) {
         </select>
       </div>
     </div>
+    
+    <div id="cards">
+      ${pageData.length === 0 ? '<div class="no-results">No results</div>' : 
+        pageData.map(item => `
+          <div class="card hedge">
+            <div class="card-header">
+              <div class="card-name">${item.name}</div>
+              <div class="badges">
+                <span class="badge badge-${item.gender.toLowerCase()}">${item.gender}</span>
+                <span class="badge badge-native">${item.nativeness}</span>
+                <span class="badge badge-price">$${item.price}</span>
+              </div>
+            </div>
+            <div class="card-meta">
+              <span>${item.language}</span>
+              <span>${item.country}</span>
+              <span>Sentence ${item.sentenceIndex + 1}</span>
+              <span>B: ${item.boosterCount} | H: ${item.hedgeCount}</span>
+            </div>
+            <div class="text-content">${item.sentence}</div>
+          </div>
+        `).join('')
+      }
+    </div>
   `;
   
-  const cardsHtml = pageData.length === 0 ? '<div class="no-results">No results</div>' : 
-    pageData.map(item => `
-      <div class="card hedge">
-        <div class="card-header">
-          <div class="card-name">${item.name}</div>
-          <div class="badges">
-            <span class="badge badge-${item.gender.toLowerCase()}">${item.gender}</span>
-            <span class="badge badge-native">${item.nativeness}</span>
-            <span class="badge badge-price">$${item.price}</span>
-          </div>
-        </div>
-        <div class="card-meta">
-          <span>${item.language}</span>
-          <span>${item.country}</span>
-          <span>Sentence ${item.sentenceIndex + 1}</span>
-          <span>B: ${item.boosterCount} | H: ${item.hedgeCount}</span>
-        </div>
-        <div class="text-content">${item.sentence}</div>
-      </div>
-    `).join('');
-  
-  app.innerHTML = controlsHtml + cardsHtml;
+  app.innerHTML = html;
   
   populateFilters();
+  attachListeners();
   
   const pageNums = document.getElementById('pageNumbers');
   if (pageNums) {

@@ -28,10 +28,20 @@ function populateFilters() {
   addOptions('wordFilter', [...allWords]);
 }
 
-['genderFilter', 'languageFilter', 'countryFilter', 'nativenessFilter', 'wordFilter', 'sortFilter'].forEach(id => {
-  const el = document.getElementById(id);
-  if (el) el.addEventListener('change', () => { currentPage = 1; updateDisplay(); });
-});
+function attachListeners() {
+  ['genderFilter', 'languageFilter', 'countryFilter', 'nativenessFilter', 'wordFilter', 'sortFilter'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.removeEventListener('change', handleFilterChange);
+      el.addEventListener('change', handleFilterChange);
+    }
+  });
+}
+
+function handleFilterChange() {
+  currentPage = 1;
+  updateDisplay();
+}
 
 function changePageSize() {
   pageSize = parseInt(document.getElementById('pageSize').value);
@@ -88,7 +98,45 @@ function updateDisplay() {
 function render(pageData) {
   const app = document.getElementById('app');
   
-  const controlsHtml = `
+  const cardsHtml = pageData.length === 0 ? '<div class="no-results">No results</div>' : 
+    pageData.map(profile => {
+      let freqHtml = '';
+      if (Object.keys(profile.booster_frequency).length > 0) {
+        freqHtml += `<div class="freq-section"><div class="freq-title">Top Boosters</div><div class="freq-grid">`;
+        freqHtml += Object.entries(profile.booster_frequency).map(([w, c]) => 
+          `<div class="freq-item"><span>${w}</span><span>${c}</span></div>`).join('');
+        freqHtml += `</div></div>`;
+      }
+      if (Object.keys(profile.hedge_frequency).length > 0) {
+        freqHtml += `<div class="freq-section"><div class="freq-title">Top Hedges</div><div class="freq-grid">`;
+        freqHtml += Object.entries(profile.hedge_frequency).map(([w, c]) => 
+          `<div class="freq-item"><span>${w}</span><span>${c}</span></div>`).join('');
+        freqHtml += `</div></div>`;
+      }
+      
+      return `
+        <div class="card">
+          <div class="card-header">
+            <div class="card-name">${profile.name}</div>
+            <div class="badges">
+              <span class="badge badge-${profile.gender.toLowerCase()}">${profile.gender}</span>
+              <span class="badge badge-native">${profile.nativeness}</span>
+              <span class="badge badge-price">$${profile.price}</span>
+            </div>
+          </div>
+          <div class="card-meta">
+            <span>${profile.language}</span>
+            <span>${profile.country}</span>
+            <span>B: ${profile.total_booster_count} | H: ${profile.total_hedge_count}</span>
+            <span><a href="${profile.url}" target="_blank">View Profile</a></span>
+          </div>
+          <div class="text-content">${profile.full_text}</div>
+          ${freqHtml}
+        </div>
+      `;
+    }).join('');
+  
+  const html = `
     <div class="controls">
       <div class="filters">
         <div class="filter-group">
@@ -146,49 +194,14 @@ function render(pageData) {
         </select>
       </div>
     </div>
+    
+    <div id="cards">${cardsHtml}</div>
   `;
   
-  const cardsHtml = pageData.length === 0 ? '<div class="no-results">No results</div>' : 
-    pageData.map(profile => {
-      let freqHtml = '';
-      if (Object.keys(profile.booster_frequency).length > 0) {
-        freqHtml += `<div class="freq-section"><div class="freq-title">Top Boosters</div><div class="freq-grid">`;
-        freqHtml += Object.entries(profile.booster_frequency).map(([w, c]) => 
-          `<div class="freq-item"><span>${w}</span><span>${c}</span></div>`).join('');
-        freqHtml += `</div></div>`;
-      }
-      if (Object.keys(profile.hedge_frequency).length > 0) {
-        freqHtml += `<div class="freq-section"><div class="freq-title">Top Hedges</div><div class="freq-grid">`;
-        freqHtml += Object.entries(profile.hedge_frequency).map(([w, c]) => 
-          `<div class="freq-item"><span>${w}</span><span>${c}</span></div>`).join('');
-        freqHtml += `</div></div>`;
-      }
-      
-      return `
-        <div class="card">
-          <div class="card-header">
-            <div class="card-name">${profile.name}</div>
-            <div class="badges">
-              <span class="badge badge-${profile.gender.toLowerCase()}">${profile.gender}</span>
-              <span class="badge badge-native">${profile.nativeness}</span>
-              <span class="badge badge-price">$${profile.price}</span>
-            </div>
-          </div>
-          <div class="card-meta">
-            <span>${profile.language}</span>
-            <span>${profile.country}</span>
-            <span>B: ${profile.total_booster_count} | H: ${profile.total_hedge_count}</span>
-            <span><a href="${profile.url}" target="_blank">View Profile</a></span>
-          </div>
-          <div class="text-content">${profile.full_text}</div>
-          ${freqHtml}
-        </div>
-      `;
-    }).join('');
-  
-  app.innerHTML = controlsHtml + cardsHtml;
+  app.innerHTML = html;
   
   populateFilters();
+  attachListeners();
   
   const pageNums = document.getElementById('pageNumbers');
   if (pageNums) {
