@@ -1,80 +1,66 @@
 let data = [], filtered = [], currentPage = 1, pageSize = 25, totalPages = 1;
+let currentFilters = {
+  gender: 'all',
+  language: 'all',
+  country: 'all',
+  nativeness: 'all',
+  word: 'all',
+  sort: 'name-asc'
+};
 
 async function loadData() {
   data = await fetch('data/hedges.json').then(r => r.json());
-  populateFilters();
-  updateDisplay();
-}
-
-function populateFilters() {
-  const addOptions = (id, values) => {
-    const sel = document.getElementById(id);
-    if (!sel) return;
-    [...new Set(values)].filter(v => v).sort().forEach(v => {
-      const opt = document.createElement('option');
-      opt.value = opt.textContent = v;
-      sel.appendChild(opt);
-    });
-  };
-  
-  addOptions('genderFilter', data.map(i => i.gender));
-  addOptions('languageFilter', data.map(i => i.language));
-  addOptions('countryFilter', data.map(i => i.country));
-  addOptions('nativenessFilter', data.map(i => i.nativeness));
-  
-  const allWords = new Set();
-  data.forEach(i => i.allWords?.forEach(w => allWords.add(w)));
-  addOptions('wordFilter', [...allWords]);
+  render();
 }
 
 function attachListeners() {
   ['genderFilter', 'languageFilter', 'countryFilter', 'nativenessFilter', 'wordFilter', 'sortFilter'].forEach(id => {
     const el = document.getElementById(id);
     if (el) {
-      el.removeEventListener('change', handleFilterChange);
       el.addEventListener('change', handleFilterChange);
     }
   });
 }
 
-function handleFilterChange() {
+function handleFilterChange(e) {
+  const id = e.target.id;
+  const value = e.target.value;
+  
+  if (id === 'genderFilter') currentFilters.gender = value;
+  else if (id === 'languageFilter') currentFilters.language = value;
+  else if (id === 'countryFilter') currentFilters.country = value;
+  else if (id === 'nativenessFilter') currentFilters.nativeness = value;
+  else if (id === 'wordFilter') currentFilters.word = value;
+  else if (id === 'sortFilter') currentFilters.sort = value;
+  
   currentPage = 1;
-  updateDisplay();
+  render();
 }
 
 function changePageSize() {
   pageSize = parseInt(document.getElementById('pageSize').value);
   currentPage = 1;
-  updateDisplay();
+  render();
 }
 
 function goToPage(page) {
   if (page < 1 || page > totalPages) return;
   currentPage = page;
-  updateDisplay();
+  render();
   window.scrollTo(0, 0);
 }
 
-function updateDisplay() {
-  const filters = {
-    gender: document.getElementById('genderFilter')?.value || 'all',
-    language: document.getElementById('languageFilter')?.value || 'all',
-    country: document.getElementById('countryFilter')?.value || 'all',
-    nativeness: document.getElementById('nativenessFilter')?.value || 'all',
-    word: document.getElementById('wordFilter')?.value || 'all',
-    sort: document.getElementById('sortFilter')?.value || 'name-asc'
-  };
-  
+function render() {
   filtered = data.filter(item => {
-    return (filters.gender === 'all' || item.gender === filters.gender) &&
-           (filters.language === 'all' || item.language === filters.language) &&
-           (filters.country === 'all' || item.country === filters.country) &&
-           (filters.nativeness === 'all' || item.nativeness === filters.nativeness) &&
-           (filters.word === 'all' || item.allWords?.includes(filters.word));
+    return (currentFilters.gender === 'all' || item.gender === currentFilters.gender) &&
+           (currentFilters.language === 'all' || item.language === currentFilters.language) &&
+           (currentFilters.country === 'all' || item.country === currentFilters.country) &&
+           (currentFilters.nativeness === 'all' || item.nativeness === currentFilters.nativeness) &&
+           (currentFilters.word === 'all' || item.allWords?.includes(currentFilters.word));
   });
   
   filtered.sort((a, b) => {
-    switch(filters.sort) {
+    switch(currentFilters.sort) {
       case 'name-asc': return a.name.localeCompare(b.name);
       case 'name-desc': return b.name.localeCompare(a.name);
       case 'price-asc': return a.price - b.price;
@@ -91,44 +77,61 @@ function updateDisplay() {
   const start = (currentPage - 1) * pageSize;
   const pageData = filtered.slice(start, start + pageSize);
   
-  render(pageData);
-}
-
-function render(pageData) {
-  const app = document.getElementById('app');
+  const genders = [...new Set(data.map(i => i.gender))].filter(v => v).sort();
+  const languages = [...new Set(data.map(i => i.language))].filter(v => v).sort();
+  const countries = [...new Set(data.map(i => i.country))].filter(v => v).sort();
+  const nativenesses = [...new Set(data.map(i => i.nativeness))].filter(v => v).sort();
+  const allWords = new Set();
+  data.forEach(i => i.allWords?.forEach(w => allWords.add(w)));
+  const words = [...allWords].sort();
   
   const html = `
     <div class="controls">
       <div class="filters">
         <div class="filter-group">
           <label>Gender</label>
-          <select id="genderFilter"><option value="all">All</option></select>
+          <select id="genderFilter">
+            <option value="all">All</option>
+            ${genders.map(v => `<option value="${v}" ${currentFilters.gender === v ? 'selected' : ''}>${v}</option>`).join('')}
+          </select>
         </div>
         <div class="filter-group">
           <label>Language</label>
-          <select id="languageFilter"><option value="all">All</option></select>
+          <select id="languageFilter">
+            <option value="all">All</option>
+            ${languages.map(v => `<option value="${v}" ${currentFilters.language === v ? 'selected' : ''}>${v}</option>`).join('')}
+          </select>
         </div>
         <div class="filter-group">
           <label>Country</label>
-          <select id="countryFilter"><option value="all">All</option></select>
+          <select id="countryFilter">
+            <option value="all">All</option>
+            ${countries.map(v => `<option value="${v}" ${currentFilters.country === v ? 'selected' : ''}>${v}</option>`).join('')}
+          </select>
         </div>
         <div class="filter-group">
           <label>Nativeness</label>
-          <select id="nativenessFilter"><option value="all">All</option></select>
+          <select id="nativenessFilter">
+            <option value="all">All</option>
+            ${nativenesses.map(v => `<option value="${v}" ${currentFilters.nativeness === v ? 'selected' : ''}>${v}</option>`).join('')}
+          </select>
         </div>
         <div class="filter-group">
           <label>Matched Word</label>
-          <select id="wordFilter"><option value="all">All</option></select>
+          <select id="wordFilter">
+            <option value="all">All</option>
+            ${words.map(v => `<option value="${v}" ${currentFilters.word === v ? 'selected' : ''}>${v}</option>`).join('')}
+          </select>
         </div>
         <div class="filter-group">
           <label>Sort By</label>
           <select id="sortFilter">
-            <option value="name-asc">Name A-Z</option>
-            <option value="name-desc">Name Z-A</option>
-            <option value="price-asc">Price Low-High</option>
-            <option value="price-desc">Price High-Low</option>
-            <option value="boosters-desc">Most Boosters</option>
-            <option value="hedges-desc">Most Hedges</option>
+            <option value="name-asc" ${currentFilters.sort === 'name-asc' ? 'selected' : ''}>Name A-Z</option>
+            <option value="name-desc" ${currentFilters.sort === 'name-desc' ? 'selected' : ''}>Name Z-A</option>
+            <option value="price-asc" ${currentFilters.sort === 'price-asc' ? 'selected' : ''}>Price Low-High</option>
+            <option value="price-desc" ${currentFilters.sort === 'price-desc' ? 'selected' : ''}>Price High-Low</option>
+            <option value="boosters-desc" ${currentFilters.sort === 'boosters-desc' ? 'selected' : ''}>Most Boosters</option>
+            <option value="hedges-desc" ${currentFilters.sort === 'hedges-desc' ? 'selected' : ''}>Most Hedges</option>
           </select>
         </div>
       </div>
@@ -181,9 +184,7 @@ function render(pageData) {
     </div>
   `;
   
-  app.innerHTML = html;
-  
-  populateFilters();
+  document.getElementById('app').innerHTML = html;
   attachListeners();
   
   const pageNums = document.getElementById('pageNumbers');
