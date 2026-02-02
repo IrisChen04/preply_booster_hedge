@@ -75,7 +75,7 @@ function toggleEdit(id) {
 }
 
 function addAnnotation(id, type) {
-  const input = document.getElementById(`editInput_${id}`);
+  const input = document.getElementById('editInput_' + id);
   if (!input) return;
   
   const word = input.value.trim();
@@ -130,11 +130,17 @@ function removeAnnotation(id, word, type) {
 }
 
 function fillInput(id, word) {
-  const input = document.getElementById(`editInput_${id}`);
+  const input = document.getElementById('editInput_' + id);
   if (input) {
     input.value = word;
     input.focus();
   }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 function highlightWithEdits(text, item) {
@@ -149,7 +155,7 @@ function highlightWithEdits(text, item) {
   const removedBoosters = originalBoosters.filter(w => !editedBoosters.includes(w));
   const removedHedges = originalHedges.filter(w => !editedHedges.includes(w));
   
-  let result = text;
+  let result = escapeHtml(text);
   
   const allWords = [
     ...newBoosters.map(w => ({word: w, type: 'booster-new'})),
@@ -163,8 +169,9 @@ function highlightWithEdits(text, item) {
   allWords.sort((a, b) => b.word.length - a.word.length);
   
   allWords.forEach(({word, type}) => {
-    const regex = new RegExp('\\b' + word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi');
-    result = result.replace(regex, `<span class="highlight-${type}">${word}</span>`);
+    const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp('\\b' + escapedWord + '\\b', 'gi');
+    result = result.replace(regex, `<span class="highlight-${type}">${escapeHtml(word)}</span>`);
   });
   
   return result;
@@ -252,22 +259,24 @@ function render() {
       const editedBoosters = edit ? edit.edited_boosters : (item.originalBoosters || []);
       const editedHedges = edit ? edit.edited_hedges : (item.originalHedges || []);
       
+      const safeId = item.id.replace(/'/g, "\\'");
+      
       return `
         <div class="card  ${isEdited ? 'edited' : ''}">
           ${isEdited ? '<div class="edited-badge">EDITED</div>' : ''}
           <div class="card-header">
-            <div class="card-name">${item.name}</div>
+            <div class="card-name">${escapeHtml(item.name)}</div>
             <div class="badges">
-              <span class="badge badge-${item.gender.toLowerCase()}">${item.gender}</span>
-              <span class="badge badge-native">${item.nativeness}</span>
+              <span class="badge badge-${item.gender.toLowerCase()}">${escapeHtml(item.gender)}</span>
+              <span class="badge badge-native">${escapeHtml(item.nativeness)}</span>
               <span class="badge badge-price">$${item.price}</span>
             </div>
           </div>
           <div class="card-meta">
-            <span>${item.language}</span>
-            <span>${item.country}</span>
-            <span>Sentence ${item.full_textIndex + 1}</span>
-            <span>B: ${item.boosterCount} | H: ${item.hedgeCount}</span>
+            <span>${escapeHtml(item.language)}</span>
+            <span>${escapeHtml(item.country)}</span>
+            <span>Profile</span>
+            <span>B: ${item.total_booster_count} | H: ${item.total_hedge_count}</span>
           </div>
           <div class="text-content">${displayText}</div>
           
@@ -276,26 +285,26 @@ function render() {
               <div class="edit-panel-title">Edit Annotations</div>
               <div class="edit-input-group">
                 <label>Enter word to annotate:</label>
-                <input type="text" id="editInput_${item.id}" placeholder="Type a word here..." />
+                <input type="text" id="editInput_${safeId}" placeholder="Type a word here..." />
               </div>
               <div class="edit-buttons">
-                <button class="btn-booster" onclick="addAnnotation('${item.id}', 'booster')">Add as Booster</button>
-                <button class="btn-hedge" onclick="addAnnotation('${item.id}', 'hedge')">Add as Hedge</button>
+                <button class="btn-booster" onclick="addAnnotation('${safeId}', 'booster')">Add as Booster</button>
+                <button class="btn-hedge" onclick="addAnnotation('${safeId}', 'hedge')">Add as Hedge</button>
               </div>
               
               ${editedBoosters.length > 0 || editedHedges.length > 0 ? `
                 <div class="current-annotations">
                   <div class="current-annotations-title">Current Annotations (click to edit):</div>
                   <div class="annotation-tags">
-                    ${editedBoosters.map(w => `<span class="annotation-tag booster" onclick="fillInput('${item.id}', '${w}')">${w}</span>`).join('')}
-                    ${editedHedges.map(w => `<span class="annotation-tag hedge" onclick="fillInput('${item.id}', '${w}')">${w}</span>`).join('')}
+                    ${editedBoosters.map(w => `<span class="annotation-tag booster" onclick="fillInput('${safeId}', '${escapeHtml(w)}')">${escapeHtml(w)}</span>`).join('')}
+                    ${editedHedges.map(w => `<span class="annotation-tag hedge" onclick="fillInput('${safeId}', '${escapeHtml(w)}')">${escapeHtml(w)}</span>`).join('')}
                   </div>
                 </div>
               ` : ''}
             </div>
           ` : ''}
           
-          <button class="edit-btn ${isEditing ? 'active' : ''}" onclick="toggleEdit('${item.id}')">
+          <button class="edit-btn ${isEditing ? 'active' : ''}" onclick="toggleEdit('${safeId}')">
             ${isEditing ? 'Done Editing' : 'Edit Annotations'}
           </button>
         </div>
@@ -316,35 +325,35 @@ function render() {
           <label>Gender</label>
           <select id="genderFilter">
             <option value="all">All</option>
-            ${genders.map(v => `<option value="${v}" ${currentFilters.gender === v ? 'selected' : ''}>${v}</option>`).join('')}
+            ${genders.map(v => `<option value="${escapeHtml(v)}" ${currentFilters.gender === v ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('')}
           </select>
         </div>
         <div class="filter-group">
           <label>Language</label>
           <select id="languageFilter">
             <option value="all">All</option>
-            ${languages.map(v => `<option value="${v}" ${currentFilters.language === v ? 'selected' : ''}>${v}</option>`).join('')}
+            ${languages.map(v => `<option value="${escapeHtml(v)}" ${currentFilters.language === v ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('')}
           </select>
         </div>
         <div class="filter-group">
           <label>Country</label>
           <select id="countryFilter">
             <option value="all">All</option>
-            ${countries.map(v => `<option value="${v}" ${currentFilters.country === v ? 'selected' : ''}>${v}</option>`).join('')}
+            ${countries.map(v => `<option value="${escapeHtml(v)}" ${currentFilters.country === v ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('')}
           </select>
         </div>
         <div class="filter-group">
           <label>Nativeness</label>
           <select id="nativenessFilter">
             <option value="all">All</option>
-            ${nativenesses.map(v => `<option value="${v}" ${currentFilters.nativeness === v ? 'selected' : ''}>${v}</option>`).join('')}
+            ${nativenesses.map(v => `<option value="${escapeHtml(v)}" ${currentFilters.nativeness === v ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('')}
           </select>
         </div>
         <div class="filter-group">
           <label>Matched Word</label>
           <select id="wordFilter">
             <option value="all">All</option>
-            ${words.map(v => `<option value="${v}" ${currentFilters.word === v ? 'selected' : ''}>${v}</option>`).join('')}
+            ${words.map(v => `<option value="${escapeHtml(v)}" ${currentFilters.word === v ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('')}
           </select>
         </div>
         <div class="filter-group">
