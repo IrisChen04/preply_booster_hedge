@@ -67,12 +67,11 @@ function getEditedCount() {
 }
 
 function toggleEdit(id) {
+  closeAnnotationMenu();
   if (editingId === id) {
     editingId = null;
-    closeAnnotationMenu();
   } else {
     editingId = id;
-    closeAnnotationMenu();
   }
   render();
 }
@@ -80,14 +79,16 @@ function toggleEdit(id) {
 function handleTextSelection(e, id, item) {
   if (editingId !== id) return;
   
-  const selection = window.getSelection();
-  const selectedText = selection.toString().trim();
-  
-  if (selectedText.length > 0) {
-    const range = selection.getRangeAt(0);
-    const rect = range.getBoundingClientRect();
-    showAnnotationMenu(rect, selectedText, id, item);
-  }
+  setTimeout(() => {
+    const selection = window.getSelection();
+    const selectedText = selection.toString().trim();
+    
+    if (selectedText.length > 0) {
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      showAnnotationMenu(rect, selectedText, id, item);
+    }
+  }, 10);
 }
 
 function showAnnotationMenu(rect, text, id, item) {
@@ -106,8 +107,8 @@ function showAnnotationMenu(rect, text, id, item) {
   const isHedge = editedHedges.includes(text);
   
   menu.innerHTML = `
-    <div style="margin-bottom: 10px; font-weight: 600; color: #666;">Selected text:</div>
-    <input type="text" id="annotationInput" value="${text}" />
+    <div class="annotation-menu-title">Selected text:</div>
+    <input type="text" id="annotationInput" value="${text.replace(/"/g, '&quot;')}" />
     <button class="btn-booster" onclick="addAnnotation('${id}', 'booster')">✅ Mark as Booster</button>
     <button class="btn-hedge" onclick="addAnnotation('${id}', 'hedge')">⚠️ Mark as Hedge</button>
     ${isBooster || isHedge ? '<button class="btn-remove" onclick="removeAnnotation(\''+id+'\')">❌ Remove Mark</button>' : ''}
@@ -117,7 +118,10 @@ function showAnnotationMenu(rect, text, id, item) {
   document.body.appendChild(menu);
   annotationMenu = menu;
   
-  document.getElementById('annotationInput').focus();
+  setTimeout(() => {
+    const input = document.getElementById('annotationInput');
+    if (input) input.focus();
+  }, 50);
 }
 
 function closeAnnotationMenu() {
@@ -294,6 +298,41 @@ function render() {
   data.forEach(i => i.allWords?.forEach(w => allWords.add(w)));
   const words = [...allWords].sort();
   
+  const cardsHtml = pageData.length === 0 ? '<div class="no-results">No results</div>' : 
+    pageData.map(item => {
+      const isEdited = !!edits[item.id];
+      const isEditing = editingId === item.id;
+      const displayText = isEdited ? highlightWithEdits(item.plainSentence, item) : item.sentence;
+      const itemJson = JSON.stringify(item).replace(/'/g, "\\'").replace(/"/g, '\\"');
+      
+      return `
+        <div class="card booster ${isEdited ? 'edited' : ''}">
+          ${isEdited ? '<div class="edited-badge">✏️ Edited</div>' : ''}
+          <div class="card-header">
+            <div class="card-name">${item.name}</div>
+            <div class="badges">
+              <span class="badge badge-${item.gender.toLowerCase()}">${item.gender}</span>
+              <span class="badge badge-native">${item.nativeness}</span>
+              <span class="badge badge-price">$${item.price}</span>
+            </div>
+          </div>
+          <div class="card-meta">
+            <span>${item.language}</span>
+            <span>${item.country}</span>
+            <span>Sentence ${item.sentenceIndex + 1}</span>
+            <span>B: ${item.boosterCount} | H: ${item.hedgeCount}</span>
+          </div>
+          <div class="text-content ${isEditing ? 'editing' : ''}" 
+               onmouseup="handleTextSelection(event, '${item.id}', JSON.parse('${itemJson}'))">
+            ${displayText}
+          </div>
+          <button class="edit-btn ${isEditing ? 'active' : ''}" onclick="toggleEdit('${item.id}')">
+            ${isEditing ? '✓ Done Editing' : '✏️ Edit Annotations'}
+          </button>
+        </div>
+      `;
+    }).join('');
+  
   const html = `
     <div class="edit-toolbar">
       <div class="edit-info">
@@ -375,42 +414,7 @@ function render() {
       </div>
     </div>
     
-    <div id="cards">
-      ${pageData.length === 0 ? '<div class="no-results">No results</div>' : 
-        pageData.map(item => {
-          const isEdited = !!edits[item.id];
-          const isEditing = editingId === item.id;
-          const displayText = isEdited ? highlightWithEdits(item.plainSentence, item) : item.sentence;
-          
-          return `
-            <div class="card booster ${isEdited ? 'edited' : ''}">
-              ${isEdited ? '<div class="edited-badge">✏️ Edited</div>' : ''}
-              <div class="card-header">
-                <div class="card-name">${item.name}</div>
-                <div class="badges">
-                  <span class="badge badge-${item.gender.toLowerCase()}">${item.gender}</span>
-                  <span class="badge badge-native">${item.nativeness}</span>
-                  <span class="badge badge-price">$${item.price}</span>
-                </div>
-              </div>
-              <div class="card-meta">
-                <span>${item.language}</span>
-                <span>${item.country}</span>
-                <span>Sentence ${item.sentenceIndex + 1}</span>
-                <span>B: ${item.boosterCount} | H: ${item.hedgeCount}</span>
-              </div>
-              <div class="text-content ${isEditing ? 'editing' : ''}" 
-                   onmouseup="handleTextSelection(event, '${item.id}', ${JSON.stringify(item).replace(/"/g, '&quot;')})">
-                ${displayText}
-              </div>
-              <button class="edit-btn ${isEditing ? 'active' : ''}" onclick="toggleEdit('${item.id}')">
-                ${isEditing ? '✓ Done Editing' : '✏️ Edit Annotations'}
-              </button>
-            </div>
-          `;
-        }).join('')
-      }
-    </div>
+    <div id="cards">${cardsHtml}</div>
   `;
   
   document.getElementById('app').innerHTML = html;
