@@ -115,15 +115,22 @@ function addAnnotation(id, type) {
   render();
 }
 
-function removeAnnotation(id, word, type) {
-  if (!edits[id]) return;
-  
-  if (type === 'booster') {
-    edits[id].edited_boosters = edits[id].edited_boosters.filter(w => w !== word);
-  } else {
-    edits[id].edited_hedges = edits[id].edited_hedges.filter(w => w !== word);
+function removeAnnotation(id, word) {
+  if (!edits[id]) {
+    const item = data.find(i => i.id === id);
+    if (!item) return;
+    
+    edits[id] = {
+      original_boosters: item.originalBoosters || [],
+      original_hedges: item.originalHedges || [],
+      edited_boosters: [...(item.originalBoosters || [])],
+      edited_hedges: [...(item.originalHedges || [])],
+      timestamp: new Date().toISOString()
+    };
   }
   
+  edits[id].edited_boosters = edits[id].edited_boosters.filter(w => w !== word);
+  edits[id].edited_hedges = edits[id].edited_hedges.filter(w => w !== word);
   edits[id].timestamp = new Date().toISOString();
   saveEdits();
   render();
@@ -294,10 +301,10 @@ function render() {
               
               ${editedBoosters.length > 0 || editedHedges.length > 0 ? `
                 <div class="current-annotations">
-                  <div class="current-annotations-title">Current Annotations (click to edit):</div>
+                  <div class="current-annotations-title">Current Annotations (click word to edit, X to remove):</div>
                   <div class="annotation-tags">
-                    ${editedBoosters.map(w => `<span class="annotation-tag booster" onclick="fillInput('${safeId}', '${escapeHtml(w)}')">${escapeHtml(w)}</span>`).join('')}
-                    ${editedHedges.map(w => `<span class="annotation-tag hedge" onclick="fillInput('${safeId}', '${escapeHtml(w)}')">${escapeHtml(w)}</span>`).join('')}
+                    ${editedBoosters.map(w => `<span class="annotation-tag booster" onclick="fillInput('${safeId}', '${escapeHtml(w)}')">${escapeHtml(w)}<span class="remove-x" onclick="event.stopPropagation(); removeAnnotation('${safeId}', '${escapeHtml(w)}')">×</span></span>`).join('')}
+                    ${editedHedges.map(w => `<span class="annotation-tag hedge" onclick="fillInput('${safeId}', '${escapeHtml(w)}')">${escapeHtml(w)}<span class="remove-x" onclick="event.stopPropagation(); removeAnnotation('${safeId}', '${escapeHtml(w)}')">×</span></span>`).join('')}
                   </div>
                 </div>
               ` : ''}

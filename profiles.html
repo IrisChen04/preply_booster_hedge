@@ -79,10 +79,11 @@
   .current-annotations { margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 4px; }
   .current-annotations-title { font-weight: 600; color: #666; margin-bottom: 10px; font-size: 13px; }
   .annotation-tags { display: flex; flex-wrap: wrap; gap: 8px; }
-  .annotation-tag { padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .annotation-tag { padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; position: relative; padding-right: 28px; }
   .annotation-tag.booster { background: #d4edda; color: #155724; }
   .annotation-tag.hedge { background: #fff3cd; color: #856404; }
   .annotation-tag:hover { opacity: 0.8; }
+  .annotation-tag .remove-x { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-weight: 700; color: #dc3545; }
   
   .highlight-booster { background: #d4edda; padding: 2px 5px; border-radius: 3px; font-weight: 600; color: #155724; border-bottom: 2px solid #28a745; }
   .highlight-hedge { background: #fff3cd; padding: 2px 5px; border-radius: 3px; font-weight: 600; color: #856404; border-bottom: 2px solid #ffc107; }
