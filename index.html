@@ -8,158 +8,61 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #333; background: #fafafa; }
   .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
-  header { background: #fff; padding: 30px; margin-bottom: 20px; border-bottom: 3px solid #3498db; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-  h1 { font-size: 28px; color: #2c3e50; }
+  header { background: #fff; padding: 40px; margin-bottom: 30px; border-bottom: 3px solid #3498db; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
+  h1 { font-size: 36px; color: #2c3e50; margin-bottom: 10px; }
+  .subtitle { color: #666; font-size: 16px; }
   
-  .controls { background: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-  .view-toggle { display: flex; gap: 10px; margin-bottom: 20px; }
-  .btn { padding: 10px 20px; border: 2px solid #3498db; background: #fff; color: #3498db; border-radius: 6px; cursor: pointer; font-weight: 600; }
-  .btn.active { background: #3498db; color: #fff; }
-  
-  .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
-  .filter-group label { display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 5px; }
-  .filter-group select, .filter-group input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
-  
-  .category-filter { margin: 20px 0; display: none; }
-  .category-filter.show { display: block; }
-  .category-btns { display: flex; gap: 10px; flex-wrap: wrap; }
-  .cat-btn { padding: 8px 16px; border: 2px solid #ddd; background: #fff; border-radius: 4px; cursor: pointer; }
-  .cat-btn.active.boosters { background: #27ae60; color: #fff; border-color: #27ae60; }
-  .cat-btn.active.hedges { background: #f39c12; color: #fff; border-color: #f39c12; }
-  .cat-btn.active.both { background: #9b59b6; color: #fff; border-color: #9b59b6; }
-  .cat-btn.active.none { background: #95a5a6; color: #fff; border-color: #95a5a6; }
-  
-  .stats { background: #fff; padding: 15px 20px; margin-bottom: 20px; border-radius: 8px; border-left: 4px solid #3498db; display: flex; gap: 30px; flex-wrap: wrap; }
-  .stat { font-size: 14px; }
-  .stat-label { color: #666; margin-right: 5px; }
-  .stat-value { color: #3498db; font-weight: 700; font-size: 16px; }
-  
-  .pagination { background: #fff; padding: 15px 20px; margin-bottom: 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
-  .page-btn { padding: 6px 12px; margin: 0 2px; border: 1px solid #ddd; background: #fff; border-radius: 4px; cursor: pointer; }
-  .page-btn.active { background: #3498db; color: #fff; }
-  .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  
-  .card { background: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; border-left: 4px solid #ddd; }
-  .card.boosters { border-left-color: #27ae60; }
-  .card.hedges { border-left-color: #f39c12; }
-  .card.both { border-left-color: #9b59b6; }
-  
-  .card-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
-  .card-name { font-size: 20px; font-weight: 700; color: #3498db; cursor: pointer; }
-  .card-name:hover { text-decoration: underline; }
-  .badges { display: flex; gap: 8px; }
-  .badge { padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-  .badge-male { background: #dbeafe; color: #1e40af; }
-  .badge-female { background: #fce7f3; color: #be185d; }
-  .badge-native { background: #d1fae5; color: #065f46; }
-  .badge-price { background: #e0e7ff; color: #3730a3; }
-  
-  .card-meta { display: flex; gap: 20px; margin-bottom: 15px; font-size: 13px; color: #666; }
-  
-  .text-content { padding: 15px; background: #fafafa; border-radius: 4px; line-height: 1.8; font-size: 15px; }
-  
-  .highlight-booster { background: #d4edda; padding: 2px 5px; border-radius: 3px; font-weight: 600; color: #155724; border-bottom: 2px solid #28a745; }
-  .highlight-hedge { background: #fff3cd; padding: 2px 5px; border-radius: 3px; font-weight: 600; color: #856404; border-bottom: 2px solid #ffc107; }
-  
-  .freq-section { margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; }
-  .freq-title { font-weight: 600; margin-bottom: 10px; color: #666; font-size: 14px; }
-  .freq-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
-  .freq-item { display: flex; justify-content: space-between; padding: 6px 10px; background: #f8f9fa; border-radius: 4px; font-size: 13px; }
-  
-  .no-results { text-align: center; padding: 60px; color: #999; }
+  .home-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+  .home-card { background: #fff; padding: 30px; border-radius: 8px; text-align: center; border-left: 4px solid #3498db; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+  .home-card.profile { border-left-color: #3498db; }
+  .home-card.booster { border-left-color: #27ae60; }
+  .home-card.hedge { border-left-color: #f39c12; }
+  .home-card.none { border-left-color: #95a5a6; }
+  .home-card h2 { font-size: 24px; margin-bottom: 10px; color: #2c3e50; }
+  .home-card .count { font-size: 48px; font-weight: 700; color: #3498db; margin: 20px 0; }
+  .home-card.booster .count { color: #27ae60; }
+  .home-card.hedge .count { color: #f39c12; }
+  .home-card.none .count { color: #95a5a6; }
+  .home-card a { display: inline-block; padding: 12px 24px; background: #3498db; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 600; margin-top: 10px; }
+  .home-card a:hover { background: #2980b9; }
 </style>
 </head>
 <body>
 <div class="container">
   <header>
     <h1>Language Corpus Viewer</h1>
+    <p class="subtitle">Browse and analyze language samples with boosters and hedges</p>
   </header>
   
-  <div class="controls">
-    <div class="view-toggle">
-      <button class="btn active" onclick="switchView('sentence')">Sentences</button>
-      <button class="btn" onclick="switchView('profile')">Profiles</button>
+  <div class="home-grid">
+    <div class="home-card profile">
+      <h2>Profiles</h2>
+      <div class="count">650</div>
+      <p>View complete speaker profiles with aggregated text</p>
+      <a href="profiles.html">View Profiles</a>
     </div>
     
-    <div class="category-filter" id="categoryFilter">
-      <label style="font-weight: 600; margin-bottom: 10px; display: block;">Category:</label>
-      <div class="category-btns">
-        <button class="cat-btn boosters active" onclick="toggleCategory('boosters')">Boosters</button>
-        <button class="cat-btn hedges active" onclick="toggleCategory('hedges')">Hedges</button>
-        <button class="cat-btn both active" onclick="toggleCategory('both')">Both</button>
-        <button class="cat-btn none active" onclick="toggleCategory('none')">None</button>
-      </div>
+    <div class="home-card booster">
+      <h2>Boosters Only</h2>
+      <div class="count">1288</div>
+      <p>Sentences containing only boosters</p>
+      <a href="boosters.html">View Boosters</a>
     </div>
     
-    <div class="filters">
-      <div class="filter-group">
-        <label>Gender</label>
-        <select id="genderFilter"><option value="all">All</option></select>
-      </div>
-      <div class="filter-group">
-        <label>Language</label>
-        <select id="languageFilter"><option value="all">All</option></select>
-      </div>
-      <div class="filter-group">
-        <label>Country</label>
-        <select id="countryFilter"><option value="all">All</option></select>
-      </div>
-      <div class="filter-group">
-        <label>Nativeness</label>
-        <select id="nativenessFilter"><option value="all">All</option></select>
-      </div>
-      <div class="filter-group">
-        <label>Matched Word</label>
-        <select id="wordFilter"><option value="all">All</option></select>
-      </div>
-      <div class="filter-group">
-        <label>Sort By</label>
-        <select id="sortFilter">
-          <option value="name-asc">Name A-Z</option>
-          <option value="name-desc">Name Z-A</option>
-          <option value="price-asc">Price Low-High</option>
-          <option value="price-desc">Price High-Low</option>
-          <option value="boosters-desc">Most Boosters</option>
-          <option value="hedges-desc">Most Hedges</option>
-        </select>
-      </div>
+    <div class="home-card hedge">
+      <h2>Hedges Only</h2>
+      <div class="count">128</div>
+      <p>Sentences containing only hedges</p>
+      <a href="hedges.html">View Hedges</a>
     </div>
-  </div>
-  
-  <div class="stats">
-    <div class="stat"><span class="stat-label">Total:</span><span class="stat-value" id="total">0</span></div>
-    <div class="stat"><span class="stat-label">Filtered:</span><span class="stat-value" id="filtered">0</span></div>
-    <div class="stat"><span class="stat-label">Displayed:</span><span class="stat-value" id="displayed">0</span></div>
-  </div>
-  
-  <div class="pagination">
-    <div>Page <span id="currentPage">1</span> of <span id="totalPages">1</span></div>
-    <div>
-      <button class="page-btn" onclick="goToPage(1)">First</button>
-      <button class="page-btn" onclick="goToPage(currentPage-1)">Prev</button>
-      <span id="pageNumbers"></span>
-      <button class="page-btn" onclick="goToPage(currentPage+1)">Next</button>
-      <button class="page-btn" onclick="goToPage(totalPages)">Last</button>
-      <select id="pageSize" onchange="changePageSize()">
-        <option value="10">10</option>
-        <option value="25" selected>25</option>
-        <option value="50">50</option>
-      </select>
-    </div>
-  </div>
-  
-  <div id="content"></div>
-  
-  <div class="pagination">
-    <div>Page <span id="currentPage2">1</span> of <span id="totalPages2">1</span></div>
-    <div>
-      <button class="page-btn" onclick="goToPage(1)">First</button>
-      <button class="page-btn" onclick="goToPage(currentPage-1)">Prev</button>
-      <button class="page-btn" onclick="goToPage(currentPage+1)">Next</button>
-      <button class="page-btn" onclick="goToPage(totalPages)">Last</button>
+    
+    <div class="home-card none">
+      <h2>No Matches</h2>
+      <div class="count">9679</div>
+      <p>Sentences without boosters or hedges</p>
+      <a href="none.html">View No Matches</a>
     </div>
   </div>
 </div>
-<script src="js/viewer.js"></script>
 </body>
 </html>
