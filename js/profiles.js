@@ -9,7 +9,6 @@ let currentFilters = {
 };
 let edits = {};
 let editingId = null;
-let annotationMenu = null;
 
 async function loadData() {
   data = await fetch('data/profiles.json').then(r => r.json());
@@ -67,7 +66,6 @@ function getEditedCount() {
 }
 
 function toggleEdit(id) {
-  closeAnnotationMenu();
   if (editingId === id) {
     editingId = null;
   } else {
@@ -76,67 +74,15 @@ function toggleEdit(id) {
   render();
 }
 
-function handleTextSelection(e, id, item) {
-  if (editingId !== id) return;
-  
-  setTimeout(() => {
-    const selection = window.getSelection();
-    const selectedText = selection.toString().trim();
-    
-    if (selectedText.length > 0) {
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      showAnnotationMenu(rect, selectedText, id, item);
-    }
-  }, 10);
-}
-
-function showAnnotationMenu(rect, text, id, item) {
-  closeAnnotationMenu();
-  
-  const menu = document.createElement('div');
-  menu.className = 'annotation-menu';
-  menu.style.left = rect.left + window.scrollX + 'px';
-  menu.style.top = rect.bottom + window.scrollY + 5 + 'px';
-  
-  const currentEdit = edits[id] || {};
-  const editedBoosters = currentEdit.edited_boosters || item.originalBoosters || [];
-  const editedHedges = currentEdit.edited_hedges || item.originalHedges || [];
-  
-  const isBooster = editedBoosters.includes(text);
-  const isHedge = editedHedges.includes(text);
-  
-  menu.innerHTML = `
-    <div class="annotation-menu-title">Selected text:</div>
-    <input type="text" id="annotationInput" value="${text.replace(/"/g, '&quot;')}" />
-    <button class="btn-booster" onclick="addAnnotation('${id}', 'booster')">✅ Mark as Booster</button>
-    <button class="btn-hedge" onclick="addAnnotation('${id}', 'hedge')">⚠️ Mark as Hedge</button>
-    ${isBooster || isHedge ? '<button class="btn-remove" onclick="removeAnnotation(\''+id+'\')">❌ Remove Mark</button>' : ''}
-    <button class="btn-cancel" onclick="closeAnnotationMenu()">Cancel</button>
-  `;
-  
-  document.body.appendChild(menu);
-  annotationMenu = menu;
-  
-  setTimeout(() => {
-    const input = document.getElementById('annotationInput');
-    if (input) input.focus();
-  }, 50);
-}
-
-function closeAnnotationMenu() {
-  if (annotationMenu) {
-    annotationMenu.remove();
-    annotationMenu = null;
-  }
-}
-
 function addAnnotation(id, type) {
-  const input = document.getElementById('annotationInput');
+  const input = document.getElementById(`editInput_${id}`);
   if (!input) return;
   
   const word = input.value.trim();
-  if (!word) return;
+  if (!word) {
+    alert('Please enter a word to annotate');
+    return;
+  }
   
   const item = data.find(i => i.id === id);
   if (!item) return;
@@ -165,26 +111,30 @@ function addAnnotation(id, type) {
   
   edits[id].timestamp = new Date().toISOString();
   saveEdits();
-  closeAnnotationMenu();
+  input.value = '';
   render();
 }
 
-function removeAnnotation(id) {
-  const input = document.getElementById('annotationInput');
-  if (!input) return;
+function removeAnnotation(id, word, type) {
+  if (!edits[id]) return;
   
-  const word = input.value.trim();
-  if (!word) return;
-  
-  if (edits[id]) {
+  if (type === 'booster') {
     edits[id].edited_boosters = edits[id].edited_boosters.filter(w => w !== word);
+  } else {
     edits[id].edited_hedges = edits[id].edited_hedges.filter(w => w !== word);
-    edits[id].timestamp = new Date().toISOString();
-    saveEdits();
   }
   
-  closeAnnotationMenu();
+  edits[id].timestamp = new Date().toISOString();
+  saveEdits();
   render();
+}
+
+function fillInput(id, word) {
+  const input = document.getElementById(`editInput_${id}`);
+  if (input) {
+    input.value = word;
+    input.focus();
+  }
 }
 
 function highlightWithEdits(text, item) {
@@ -225,12 +175,6 @@ function attachListeners() {
     const el = document.getElementById(id);
     if (el) {
       el.addEventListener('change', handleFilterChange);
-    }
-  });
-  
-  document.addEventListener('click', (e) => {
-    if (annotationMenu && !annotationMenu.contains(e.target)) {
-      closeAnnotationMenu();
     }
   });
 }
@@ -303,11 +247,14 @@ function render() {
       const isEdited = !!edits[item.id];
       const isEditing = editingId === item.id;
       const displayText = isEdited ? highlightWithEdits(item.plainText, item) : item.full_text;
-      const itemJson = JSON.stringify(item).replace(/'/g, "\\'").replace(/"/g, '\\"');
+      
+      const edit = edits[item.id];
+      const editedBoosters = edit ? edit.edited_boosters : (item.originalBoosters || []);
+      const editedHedges = edit ? edit.edited_hedges : (item.originalHedges || []);
       
       return `
         <div class="card  ${isEdited ? 'edited' : ''}">
-          ${isEdited ? '<div class="edited-badge">✏️ Edited</div>' : ''}
+          ${isEdited ? '<div class="edited-badge">EDITED</div>' : ''}
           <div class="card-header">
             <div class="card-name">${item.name}</div>
             <div class="badges">
@@ -322,12 +269,34 @@ function render() {
             <span>Sentence ${item.full_textIndex + 1}</span>
             <span>B: ${item.boosterCount} | H: ${item.hedgeCount}</span>
           </div>
-          <div class="text-content ${isEditing ? 'editing' : ''}" 
-               onmouseup="handleTextSelection(event, '${item.id}', JSON.parse('${itemJson}'))">
-            ${displayText}
-          </div>
+          <div class="text-content">${displayText}</div>
+          
+          ${isEditing ? `
+            <div class="edit-panel">
+              <div class="edit-panel-title">Edit Annotations</div>
+              <div class="edit-input-group">
+                <label>Enter word to annotate:</label>
+                <input type="text" id="editInput_${item.id}" placeholder="Type a word here..." />
+              </div>
+              <div class="edit-buttons">
+                <button class="btn-booster" onclick="addAnnotation('${item.id}', 'booster')">Add as Booster</button>
+                <button class="btn-hedge" onclick="addAnnotation('${item.id}', 'hedge')">Add as Hedge</button>
+              </div>
+              
+              ${editedBoosters.length > 0 || editedHedges.length > 0 ? `
+                <div class="current-annotations">
+                  <div class="current-annotations-title">Current Annotations (click to edit):</div>
+                  <div class="annotation-tags">
+                    ${editedBoosters.map(w => `<span class="annotation-tag booster" onclick="fillInput('${item.id}', '${w}')">${w}</span>`).join('')}
+                    ${editedHedges.map(w => `<span class="annotation-tag hedge" onclick="fillInput('${item.id}', '${w}')">${w}</span>`).join('')}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          ` : ''}
+          
           <button class="edit-btn ${isEditing ? 'active' : ''}" onclick="toggleEdit('${item.id}')">
-            ${isEditing ? '✓ Done Editing' : '✏️ Edit Annotations'}
+            ${isEditing ? 'Done Editing' : 'Edit Annotations'}
           </button>
         </div>
       `;
@@ -338,7 +307,7 @@ function render() {
       <div class="edit-info">
         Edited items: <span class="edit-count">${getEditedCount()}</span>
       </div>
-      <button class="export-btn" onclick="exportEdits()">📥 Export Edits</button>
+      <button class="export-btn" onclick="exportEdits()">Export Edits</button>
     </div>
   
     <div class="controls">
