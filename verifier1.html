@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Booster Verification</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f5f5; color: #1a1a1a; }
+
+  header {
+    background: #fff;
+    border-bottom: 3px solid #4f46e5;
+    padding: 20px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  header h1 { font-size: 20px; font-weight: 700; color: #1a1a1a; }
+  .badge { background: #4f46e5; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-left: 10px; }
+
+  .top-bar {
+    max-width: 860px;
+    margin: 24px auto 0;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .stats { display: flex; gap: 24px; flex-wrap: wrap; }
+  .stat { text-align: center; }
+  .stat-val { font-size: 26px; font-weight: 800; color: #4f46e5; }
+  .stat-val.ok { color: #16a34a; }
+  .stat-val.bad { color: #dc2626; }
+  .stat-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .progress-wrap { max-width: 860px; margin: 12px auto 0; padding: 0 20px; }
+  .progress-bg { background: #e5e7eb; border-radius: 99px; height: 8px; overflow: hidden; }
+  .progress-fill { height: 100%; background: #4f46e5; border-radius: 99px; transition: width 0.4s; }
+  .progress-text { font-size: 12px; color: #888; margin-top: 4px; text-align: right; }
+
+  .controls {
+    max-width: 860px;
+    margin: 16px auto 0;
+    padding: 0 20px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .filter-group { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .filter-group label { font-size: 13px; font-weight: 600; color: #555; }
+  select {
+    padding: 7px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 13px;
+    background: #fff;
+    cursor: pointer;
+  }
+  select:focus { outline: none; border-color: #4f46e5; }
+
+  .btn-dl {
+    padding: 8px 18px;
+    background: #16a34a;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-dl:hover { background: #15803d; }
+  .btn-dl:disabled { background: #ccc; cursor: not-allowed; }
+
+  .main { max-width: 860px; margin: 20px auto; padding: 0 20px 40px; }
+
+  .card {
+    background: #fff;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    border-left: 5px solid #e5e7eb;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    padding: 22px 24px;
+    transition: border-color 0.2s;
+  }
+  .card.correct { border-left-color: #16a34a; background: #f0fdf4; }
+  .card.incorrect { border-left-color: #dc2626; background: #fef2f2; }
+
+  .card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .meta-left { display: flex; gap: 16px; flex-wrap: wrap; }
+  .meta-item { font-size: 12px; color: #888; }
+  .meta-item span { font-weight: 700; color: #444; }
+
+  .sentence-box {
+    font-size: 15px;
+    line-height: 1.8;
+    color: #1a1a1a;
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    border-left: 3px solid #4f46e5;
+  }
+  .highlight {
+    background: #fef9c3;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-weight: 700;
+    border-bottom: 2px solid #facc15;
+  }
+
+  .booster-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .tag {
+    background: #ede9fe;
+    color: #4f46e5;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .verdict-row { display: flex; gap: 10px; }
+  .btn-verdict {
+    flex: 1;
+    padding: 12px;
+    border: 2px solid;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: #fff;
+  }
+  .btn-verdict:hover { transform: translateY(-1px); }
+  .btn-ok { color: #16a34a; border-color: #16a34a; }
+  .btn-ok:hover, .btn-ok.active { background: #16a34a; color: #fff; }
+  .btn-bad { color: #dc2626; border-color: #dc2626; }
+  .btn-bad:hover, .btn-bad.active { background: #dc2626; color: #fff; }
+
+  .status-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+  }
+  .dot-pending { background: #f59e0b; }
+  .dot-correct { background: #16a34a; }
+  .dot-incorrect { background: #dc2626; }
+
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin: 24px 0 8px;
+    flex-wrap: wrap;
+  }
+  .pg-btn {
+    padding: 7px 14px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    color: #4f46e5;
+    font-weight: 500;
+  }
+  .pg-btn:hover:not(:disabled) { background: #f0f0f0; }
+  .pg-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .pg-btn.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+  .pg-info { font-size: 13px; color: #888; }
+
+  .empty { text-align: center; padding: 60px; color: #aaa; font-size: 15px; }
+  .loading { text-align: center; padding: 60px; color: #4f46e5; font-size: 15px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <span style="font-size:20px; font-weight:700;">Booster Verification</span>
+    <span class="badge" id="verifierBadge">Verifier 2</span>
+  </div>
+  <button class="btn-dl" id="dlBtn" onclick="downloadCSV()" disabled>⬇ Download CSV</button>
+</header>
+
+<div class="top-bar">
+  <div class="stats">
+    <div class="stat"><div class="stat-val" id="sTotal">0</div><div class="stat-label">Total</div></div>
+    <div class="stat"><div class="stat-val" id="sVerified">0</div><div class="stat-label">Verified</div></div>
+    <div class="stat"><div class="stat-val ok" id="sCorrect">0</div><div class="stat-label">Correct</div></div>
+    <div class="stat"><div class="stat-val bad" id="sIncorrect">0</div><div class="stat-label">Incorrect</div></div>
+    <div class="stat"><div class="stat-val" id="sRemain">0</div><div class="stat-label">Remaining</div></div>
+  </div>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-bg"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  <div class="progress-text" id="progressText">0 / 0 verified</div>
+</div>
+
+<div class="controls">
+  <div class="filter-group">
+    <label>Status:</label>
+    <select id="filterStatus" onchange="applyFilter()">
+      <option value="all">All</option>
+      <option value="pending">Pending</option>
+      <option value="correct">Correct</option>
+      <option value="incorrect">Incorrect</option>
+    </select>
+    <label>Per page:</label>
+    <select id="pageSize" onchange="changePageSize()">
+      <option value="10" selected>10</option>
+      <option value="25">25</option>
+      <option value="50">50</option>
+    </select>
+  </div>
+  <div class="pg-info" id="pageInfo">Page 1 of 1</div>
+</div>
+
+<div class="main" id="cardArea">
+  <div class="loading">Loading data...</div>
+</div>
+
+<div class="pagination" id="paginationArea"></div>
+
+<script>
+  // ── CONFIG ──────────────────────────────────────────────
+  const VERIFIER_ID   = 'verifier2';
+  const VERIFIER_NAME = 'Verifier 2';
+  const DATA_FILE     = 'data/annotator2_data.json';
+
+  // ────────────────────────────────────────────────────────
+
+  let allData      = [];
+  let verdicts     = {};   // index → 'correct' | 'incorrect'
+  let filteredData = [];
+  let currentPage  = 1;
+  let pageSize     = 10;
+
+  // ── LOAD ─────────────────────────────────────────────────
+  fetch(DATA_FILE)
+    .then(r => { if (!r.ok) throw new Error('File not found'); return r.json(); })
+    .then(data => {
+      allData = data;
+      // restore from localStorage
+      const saved = localStorage.getItem('verdicts_' + VERIFIER_ID);
+      if (saved) verdicts = JSON.parse(saved);
+      document.getElementById('verifierBadge').textContent = VERIFIER_NAME;
+      applyFilter();
+    })
+    .catch(() => {
+      document.getElementById('cardArea').innerHTML =
+        '<div class="empty">⚠️ Could not load data.<br>Make sure <code>' + DATA_FILE + '</code> exists.</div>';
+    });
+
+  // ── FILTER + RENDER ───────────────────────────────────────
+  function applyFilter() {
+    const status = document.getElementById('filterStatus').value;
+    filteredData = allData.filter((_, i) => {
+      const v = verdicts[i];
+      if (status === 'pending')   return !v;
+      if (status === 'correct')   return v === 'correct';
+      if (status === 'incorrect') return v === 'incorrect';
+      return true;
+    });
+    currentPage = 1;
+    render();
+  }
+
+  function changePageSize() {
+    pageSize = parseInt(document.getElementById('pageSize').value);
+    currentPage = 1;
+    render();
+  }
+
+  function goToPage(p) {
+    const total = Math.ceil(filteredData.length / pageSize);
+    currentPage = Math.max(1, Math.min(p, total));
+    render();
+  }
+
+  function render() {
+    updateStats();
+    renderCards();
+    renderPagination();
+  }
+
+  // ── STATS ─────────────────────────────────────────────────
+  function updateStats() {
+    const total     = allData.length;
+    const verified  = Object.keys(verdicts).length;
+    const correct   = Object.values(verdicts).filter(v => v === 'correct').length;
+    const incorrect = Object.values(verdicts).filter(v => v === 'incorrect').length;
+    const remain    = total - verified;
+    const pct       = total ? (verified / total * 100).toFixed(1) : 0;
+
+    document.getElementById('sTotal').textContent     = total;
+    document.getElementById('sVerified').textContent  = verified;
+    document.getElementById('sCorrect').textContent   = correct;
+    document.getElementById('sIncorrect').textContent = incorrect;
+    document.getElementById('sRemain').textContent    = remain;
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressText').textContent = verified + ' / ' + total + ' verified (' + pct + '%)';
+    document.getElementById('dlBtn').disabled = verified === 0;
+  }
+
+  // ── CARDS ─────────────────────────────────────────────────
+  function renderCards() {
+    const area  = document.getElementById('cardArea');
+    const start = (currentPage - 1) * pageSize;
+    const slice = filteredData.slice(start, start + pageSize);
+
+    if (!slice.length) {
+      area.innerHTML = '<div class="empty">No items to show.</div>';
+      return;
+    }
+
+    area.innerHTML = slice.map(row => {
+      const globalIdx = allData.indexOf(row);
+      const v         = verdicts[globalIdx];
+      const cardClass = v === 'correct' ? 'correct' : v === 'incorrect' ? 'incorrect' : '';
+      const dotClass  = v ? (v === 'correct' ? 'dot-correct' : 'dot-incorrect') : 'dot-pending';
+      const dotLabel  = v ? v.charAt(0).toUpperCase() + v.slice(1) : 'Pending';
+
+      // highlight boosters in sentence
+      let sentence = escHtml(row.Sentence || '');
+      const boosters = Array.isArray(row.booster) ? row.booster : [];
+      boosters.forEach(b => {
+        const re = new RegExp('(' + escRegex(b) + ')', 'gi');
+        sentence = sentence.replace(re, '<span class="highlight">$1</span>');
+      });
+
+      const tags = boosters.map(b => '<span class="tag">' + escHtml(b) + '</span>').join('');
+
+      return `
+        <div class="card ${cardClass}" id="card-${globalIdx}">
+          <div class="card-meta">
+            <div class="meta-left">
+              <div class="meta-item">Tutor: <span>${escHtml(String(row.tutor_id || ''))}</span></div>
+              <div class="meta-item">Sentence #<span>${escHtml(String(row.Sentence_Index ?? ''))}</span></div>
+            </div>
+            <div class="meta-item">
+              <span class="status-dot ${dotClass}"></span>${dotLabel}
+            </div>
+          </div>
+
+          <div class="sentence-box">${sentence}</div>
+
+          <div class="booster-tags">${tags || '<span style="color:#aaa;font-size:13px;">No boosters tagged</span>'}</div>
+
+          <div class="verdict-row">
+            <button class="btn-verdict btn-ok  ${v === 'correct'   ? 'active' : ''}"
+                    onclick="setVerdict(${globalIdx}, 'correct')">✓ Correct</button>
+            <button class="btn-verdict btn-bad ${v === 'incorrect' ? 'active' : ''}"
+                    onclick="setVerdict(${globalIdx}, 'incorrect')">✗ Incorrect</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ── VERDICT ───────────────────────────────────────────────
+  function setVerdict(idx, val) {
+    // toggle off if clicking same button again
+    if (verdicts[idx] === val) {
+      delete verdicts[idx];
+    } else {
+      verdicts[idx] = val;
+    }
+    localStorage.setItem('verdicts_' + VERIFIER_ID, JSON.stringify(verdicts));
+    applyFilter();
+  }
+
+  // ── PAGINATION ────────────────────────────────────────────
+  function renderPagination() {
+    const total = Math.ceil(filteredData.length / pageSize);
+    document.getElementById('pageInfo').textContent = 'Page ' + currentPage + ' of ' + (total || 1);
+
+    const area = document.getElementById('paginationArea');
+    if (total <= 1) { area.innerHTML = ''; return; }
+
+    let html = `<button class="pg-btn" onclick="goToPage(1)"     ${currentPage===1?'disabled':''}>«</button>
+                <button class="pg-btn" onclick="goToPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
+
+    const range = pageRange(currentPage, total);
+    range.forEach(p => {
+      if (p === '...') html += `<span style="padding:0 4px;color:#aaa">…</span>`;
+      else html += `<button class="pg-btn ${p===currentPage?'active':''}" onclick="goToPage(${p})">${p}</button>`;
+    });
+
+    html += `<button class="pg-btn" onclick="goToPage(${currentPage+1})" ${currentPage===total?'disabled':''}>›</button>
+             <button class="pg-btn" onclick="goToPage(${total})"         ${currentPage===total?'disabled':''}>»</button>`;
+    area.innerHTML = html;
+  }
+
+  function pageRange(cur, total) {
+    if (total <= 7) return Array.from({length: total}, (_, i) => i + 1);
+    if (cur <= 4)   return [1,2,3,4,5,'...',total];
+    if (cur >= total - 3) return [1,'...',total-4,total-3,total-2,total-1,total];
+    return [1,'...',cur-1,cur,cur+1,'...',total];
+  }
+
+  // ── DOWNLOAD ──────────────────────────────────────────────
+  function downloadCSV() {
+    const rows = [['tutor_id','Sentence_Index','Sentence','booster','verdict']];
+    allData.forEach((row, i) => {
+      const v = verdicts[i] || '';
+      rows.push([
+        row.tutor_id ?? '',
+        row.Sentence_Index ?? '',
+        '"' + String(row.Sentence || '').replace(/"/g, '""') + '"',
+        '"' + (Array.isArray(row.booster) ? row.booster.join('; ') : '') + '"',
+        v
+      ]);
+    });
+    const csv  = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8'});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = VERIFIER_ID + '_results.csv'; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ── HELPERS ───────────────────────────────────────────────
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function escRegex(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+</script>
+</body>
+</html>
