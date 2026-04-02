@@ -90,8 +90,10 @@
                  text-transform: uppercase; letter-spacing: 0.4px; }
   .field-label .req { color: #dc2626; margin-left: 2px; }
 
-  /* radio / checkbox */
-  .radio-group, .checkbox-group { display: flex; gap: 10px; flex-wrap: wrap; }
+  /* ── CHANGED: radio / checkbox 选项并排 ── */
+  .radio-group, .checkbox-group {
+    display: flex; flex-direction: row; gap: 10px; flex-wrap: wrap;
+  }
   .radio-group label, .checkbox-group label {
     display: flex; align-items: center; gap: 4px;
     font-size: 13px; cursor: pointer; padding: 3px 8px;
@@ -124,15 +126,15 @@
   .scale-btn:hover { border-color: #4f46e5; color: #4f46e5; }
   .scale-btn.active { background: #4f46e5; border-color: #4f46e5; color: #fff; }
 
-  /* binary NO button */
+  /* ── CHANGED: binary YES button (原来是红色NO) ── */
   .btn-no {
     flex-shrink: 0; width: 48px; height: 48px; border: 2px solid #ddd;
     border-radius: 8px; background: #fff; font-size: 12px; font-weight: 700;
     color: #bbb; cursor: pointer; transition: all 0.15s;
     display: flex; align-items: center; justify-content: center;
   }
-  .btn-no:hover { border-color: #dc2626; color: #dc2626; background: #fff5f5; }
-  .btn-no.active { background: #dc2626; border-color: #dc2626; color: #fff; }
+  .btn-no:hover { border-color: #16a34a; color: #16a34a; background: #f0fdf4; }
+  .btn-no.active { background: #16a34a; border-color: #16a34a; color: #fff; }
 
   .pagination {
     display: flex; justify-content: center; align-items: center;
@@ -188,34 +190,18 @@
 <div class="pagination" id="paginationArea"></div>
 
 <script>
-// ── Baked-in constants ────────────────────────────────────────────────────
 const CODER_ID   = 'coder_1';
 const CODER_NAME = 'Coder 1';
 const DATA_FILE  = 'data/coder_1_data.json';
+const SCHEMA = [{"name": "row_index", "role": "display", "coding_type": "binary", "coding_label": "row_index", "coding_options": [], "required": false}, {"name": "Sentence_Index", "role": "display", "coding_type": "binary", "coding_label": "Sentence_Index", "coding_options": [], "required": false}, {"name": "booster_word", "role": "display", "coding_type": "binary", "coding_label": "booster_word", "coding_options": [], "required": false}, {"name": "left_context", "role": "display", "coding_type": "binary", "coding_label": "left_context", "coding_options": [], "required": false}, {"name": "match", "role": "highlight", "coding_type": "binary", "coding_label": "match", "coding_options": [], "required": false}, {"name": "URL", "role": "display", "coding_type": "binary", "coding_label": "URL", "coding_options": [], "required": false}, {"name": "Sentence_plain", "role": "main_text", "coding_type": "binary", "coding_label": "Sentence_plain", "coding_options": [], "required": false}, {"name": "Is_Booster", "role": "coding", "coding_type": "binary", "coding_label": "Is_Booster", "coding_options": [], "required": false}, {"name": "Self-focused ", "role": "coding", "coding_type": "binary", "coding_label": "Self-focused ", "coding_options": [], "required": false}, {"name": "Student-focused", "role": "coding", "coding_type": "binary", "coding_label": "Student-focused", "coding_options": [], "required": false}];
 
-// ── Schema (injected by generator) ───────────────────────────────────────
-const SCHEMA = [{"name": "row_index", "role": "display", "coding_type": "binary", "coding_label": "row_index", "coding_options": [], "required": false}, {"name": "Sentence_Index", "role": "display", "coding_type": "binary", "coding_label": "Sentence_Index", "coding_options": [], "required": false}, {"name": "booster_word", "role": "display", "coding_type": "binary", "coding_label": "booster_word", "coding_options": [], "required": false}, {"name": "match", "role": "highlight", "coding_type": "binary", "coding_label": "match", "coding_options": [], "required": false}, {"name": "URL", "role": "display", "coding_type": "binary", "coding_label": "URL", "coding_options": [], "required": false}, {"name": "Sentence_plain", "role": "main_text", "coding_type": "binary", "coding_label": "Sentence_plain", "coding_options": [], "required": false}, {"name": "Is_Booster", "role": "coding", "coding_type": "binary", "coding_label": "Is_Booster", "coding_options": [], "required": true}, {"name": "Self-focused ", "role": "coding", "coding_type": "binary", "coding_label": "Self-focused ", "coding_options": [], "required": false}, {"name": "Student-focused", "role": "coding", "coding_type": "binary", "coding_label": "Student-focused", "coding_options": [], "required": false}];
-/*
-  SCHEMA is an array of objects:
-  {
-    name: "column_name",
-    role: "display" | "main_text" | "highlight" | "coding",
-    coding_type: "binary" | "radio" | "dropdown" | "checkbox" | "text" | "scale",
-    coding_label: "Human Label",
-    coding_options: ["opt1", "opt2"],   // for radio/dropdown/checkbox/scale
-    required: true | false
-  }
-*/
-
-// ── State ─────────────────────────────────────────────────────────────────
 let allData     = [];
-let answers     = {};   // { rowIndex: { fieldName: value, ... } }
+let answers     = {};
 let currentPage = 1;
 let pageSize    = 10;
 
 const STORAGE_KEY = 'answers_' + CODER_ID;
 
-// ── Boot ──────────────────────────────────────────────────────────────────
 fetch(DATA_FILE)
   .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
   .then(data => {
@@ -229,10 +215,7 @@ fetch(DATA_FILE)
       '<div class="empty">⚠️ Could not load <code>' + DATA_FILE + '</code><br>' + err + '</div>';
   });
 
-// ── Helpers ───────────────────────────────────────────────────────────────
-function save() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(answers));
-}
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(answers)); }
 
 function isRowCoded(idx) {
   const a = answers[idx];
@@ -259,7 +242,6 @@ function escHtml(s) {
 }
 function escRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
 
-// ── Render ────────────────────────────────────────────────────────────────
 function render() { updateStats(); renderCards(); renderPagination(); }
 
 function updateStats() {
@@ -267,7 +249,6 @@ function updateStats() {
   const coded  = countCoded();
   const remain = total - coded;
   const pct    = total ? (coded / total * 100).toFixed(1) : 0;
-
   document.getElementById('sTotal').textContent  = total;
   document.getElementById('sCoded').textContent  = coded;
   document.getElementById('sRemain').textContent = remain;
@@ -280,71 +261,55 @@ function renderCards() {
   const area  = document.getElementById('cardArea');
   const start = (currentPage - 1) * pageSize;
   const slice = allData.slice(start, start + pageSize);
-
   if (!slice.length) { area.innerHTML = '<div class="empty">No items.</div>'; return; }
 
   area.innerHTML = slice.map((row, localIdx) => {
     const gi = start + localIdx;
     const coded = isRowCoded(gi);
 
-    // ── Display fields (meta tags) ──
     const displayFields = SCHEMA.filter(s => s.role === 'display');
     const metaHtml = displayFields.map(f =>
       `<div class="meta-item">${escHtml(f.name)}: <span>${escHtml(row[f.name] ?? '')}</span></div>`
     ).join('');
 
-    // ── Main text ──
     const mainField = SCHEMA.find(s => s.role === 'main_text');
     let mainText = mainField ? escHtml(row[mainField.name] ?? '') : '';
 
-    // ── Highlight field ──
     const hlField = SCHEMA.find(s => s.role === 'highlight');
     let tagsHtml = '';
-if (hlField) {
-  // Support: single string, comma-separated string, or JSON array
-  const raw = row[hlField.name];
-  let terms = [];
-  if (Array.isArray(raw)) {
-    terms = raw.map(t => String(t).trim()).filter(Boolean);
-  } else if (typeof raw === 'string' && raw.trim()) {
-    // Try JSON array first, then fall back to single word
-    try {
-      const parsed = JSON.parse(raw);
-      terms = Array.isArray(parsed)
-        ? parsed.map(t => String(t).trim()).filter(Boolean)
-        : [raw.trim()];
-    } catch {
-      // Plain single word (your case: "very", "always", etc.)
-      terms = [raw.trim()];
+    if (hlField) {
+      const raw = row[hlField.name];
+      let terms = [];
+      if (Array.isArray(raw)) {
+        terms = raw.map(t => String(t).trim()).filter(Boolean);
+      } else if (typeof raw === 'string' && raw.trim()) {
+        try {
+          const parsed = JSON.parse(raw);
+          terms = Array.isArray(parsed)
+            ? parsed.map(t => String(t).trim()).filter(Boolean)
+            : [raw.trim()];
+        } catch {
+          terms = [raw.trim()];
+        }
+      }
+      terms.forEach(t => {
+        if (!t) return;
+        mainText = mainText.replace(
+          new RegExp('(' + escRegex(escHtml(t)) + ')', 'gi'),
+          '<span class="highlight">$1</span>'
+        );
+      });
+      tagsHtml = terms.map(t => `<span class="tag">${escHtml(t)}</span>`).join('');
     }
-  }
 
-  // Case-insensitive highlight, preserve original casing in text
-  terms.forEach(t => {
-    if (!t) return;
-    mainText = mainText.replace(
-      new RegExp('(' + escRegex(escHtml(t)) + ')', 'gi'),
-      '<span class="highlight">$1</span>'
-    );
-  });
-
-  // Show tag with the original value from CSV
-  tagsHtml = terms.map(t => `<span class="tag">${escHtml(t)}</span>`).join('');
-}
-
-
-    // ── Coding fields ──
     const codingFields = SCHEMA.filter(s => s.role === 'coding');
     const codingHtml = codingFields.length ? `
       <div class="coding-fields">
         ${codingFields.map(f => renderCodingField(f, gi)).join('')}
       </div>` : '';
 
-    // Card state class
-    const stateClass = coded ? 'coded' : '';
-
     return `
-      <div class="card ${stateClass}" id="card-${gi}">
+      <div class="card ${coded ? 'coded' : ''}" id="card-${gi}">
         <div class="card-row">
           <div class="card-body">
             <div class="card-meta">${metaHtml}</div>
@@ -358,9 +323,10 @@ if (hlField) {
   }).join('');
 }
 
+// ── CHANGED: 文字改为 YES ──
 function renderBinaryButton(gi) {
   const active = answers[gi]?.['_binary'] === 1;
-  return `<button class="btn-no ${active ? 'active' : ''}" onclick="toggleBinary(${gi}, this)">NO</button>`;
+  return `<button class="btn-no ${active ? 'active' : ''}" onclick="toggleBinary(${gi}, this)">YES</button>`;
 }
 
 function renderCodingField(f, gi) {
@@ -374,13 +340,13 @@ function renderCodingField(f, gi) {
         <div class="field-label">${escHtml(f.coding_label || f.name)}${req}</div>
         <button class="btn-no ${active ? 'active' : ''}"
                 onclick="setCoding(${gi}, '${f.name}', ${active ? 0 : 1}, this, 'binary')">
-          NO
+          YES
         </button>
       </div>`;
   }
 
   if (f.coding_type === 'radio') {
-    const opts = f.coding_options.map((o, oi) => `
+    const opts = f.coding_options.map(o => `
       <label>
         <input type="radio" name="r_${gi}_${f.name}" value="${escHtml(o)}"
           ${current === o ? 'checked' : ''}
@@ -451,50 +417,36 @@ function renderCodingField(f, gi) {
   return '';
 }
 
-// ── Answer setters ────────────────────────────────────────────────────────
-function ensureAnswer(gi) {
-  if (!answers[gi]) answers[gi] = {};
-}
+function ensureAnswer(gi) { if (!answers[gi]) answers[gi] = {}; }
 
 function toggleBinary(gi, btn) {
   ensureAnswer(gi);
   const current = answers[gi]['_binary'] === 1;
   answers[gi]['_binary'] = current ? 0 : 1;
   btn.classList.toggle('active', !current);
-  save();
-  refreshCard(gi);
-  updateStats();
+  save(); refreshCard(gi); updateStats();
 }
 
 function setCoding(gi, fieldName, value, btn, type) {
   ensureAnswer(gi);
   answers[gi][fieldName] = value;
-
   if (type === 'binary' || type === 'scale') {
-    // Toggle active class on sibling buttons
     if (btn) {
       const parent = btn.closest('.field-group');
       parent.querySelectorAll('.btn-no, .scale-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
     }
   }
-  save();
-  refreshCard(gi);
-  updateStats();
+  save(); refreshCard(gi); updateStats();
 }
 
 function setCheckbox(gi, fieldName, option, checked) {
   ensureAnswer(gi);
   let arr = Array.isArray(answers[gi][fieldName]) ? answers[gi][fieldName] : [];
-  if (checked) {
-    if (!arr.includes(option)) arr.push(option);
-  } else {
-    arr = arr.filter(v => v !== option);
-  }
+  if (checked) { if (!arr.includes(option)) arr.push(option); }
+  else { arr = arr.filter(v => v !== option); }
   answers[gi][fieldName] = arr;
-  save();
-  refreshCard(gi);
-  updateStats();
+  save(); refreshCard(gi); updateStats();
 }
 
 function refreshCard(gi) {
@@ -504,11 +456,9 @@ function refreshCard(gi) {
   else card.classList.remove('coded');
 }
 
-// ── Pagination ────────────────────────────────────────────────────────────
 function changePageSize() {
   pageSize = parseInt(document.getElementById('pageSize').value);
-  currentPage = 1;
-  render();
+  currentPage = 1; render();
 }
 
 function goToPage(p) {
@@ -522,7 +472,6 @@ function renderPagination() {
   document.getElementById('pageInfo').textContent = 'Page ' + currentPage + ' of ' + (total || 1);
   const area = document.getElementById('paginationArea');
   if (total <= 1) { area.innerHTML = ''; return; }
-
   let html = `<button class="pg-btn" onclick="goToPage(1)" ${currentPage===1?'disabled':''}>«</button>
               <button class="pg-btn" onclick="goToPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
   pageRange(currentPage, total).forEach(p => {
@@ -541,20 +490,14 @@ function pageRange(cur, total) {
   return [1,'...',cur-1,cur,cur+1,'...',total];
 }
 
-// ── CSV Export ────────────────────────────────────────────────────────────
 function downloadCSV() {
   const codingFields = SCHEMA.filter(s => s.role === 'coding');
-  const allFields    = SCHEMA.filter(s => s.role !== 'coding');
   const hasBinary    = codingFields.length === 0;
-
-  // Header
   const header = [
     ...SCHEMA.filter(s => s.role !== 'coding').map(s => s.name),
-    ...(hasBinary ? ['wrong'] : codingFields.map(s => s.name))
+    ...(hasBinary ? ['flagged'] : codingFields.map(s => s.name))
   ];
-
   const rows = [header];
-
   allData.forEach((row, i) => {
     const ans = answers[i] || {};
     const line = [
@@ -574,7 +517,6 @@ function downloadCSV() {
     ];
     rows.push(line);
   });
-
   const csv  = rows.map(r => r.join(',')).join('\n');
   const blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8'});
   const a    = Object.assign(document.createElement('a'), {
