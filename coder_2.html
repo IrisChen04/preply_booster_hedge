@@ -194,7 +194,7 @@ const CODER_NAME = 'Coder 2';
 const DATA_FILE  = 'data/coder_2_data.json';
 
 // ── Schema (injected by generator) ───────────────────────────────────────
-const SCHEMA = [{"name": "row_index", "role": "display", "coding_type": "binary", "coding_label": "row_index", "coding_options": [], "required": false}, {"name": "Sentence_Index", "role": "display", "coding_type": "binary", "coding_label": "Sentence_Index", "coding_options": [], "required": false}, {"name": "booster_word", "role": "display", "coding_type": "binary", "coding_label": "booster_word", "coding_options": [], "required": false}, {"name": "match", "role": "highlight", "coding_type": "binary", "coding_label": "match", "coding_options": [], "required": false}, {"name": "Sentence", "role": "display", "coding_type": "binary", "coding_label": "Sentence", "coding_options": [], "required": false}, {"name": "URL", "role": "display", "coding_type": "binary", "coding_label": "URL", "coding_options": [], "required": false}, {"name": "Sentence_plain", "role": "main_text", "coding_type": "checkbox", "coding_label": "Sentence_plain", "coding_options": [], "required": false}];
+const SCHEMA = [{"name": "row_index", "role": "display", "coding_type": "binary", "coding_label": "row_index", "coding_options": [], "required": false}, {"name": "Sentence_Index", "role": "display", "coding_type": "binary", "coding_label": "Sentence_Index", "coding_options": [], "required": false}, {"name": "booster_word", "role": "display", "coding_type": "binary", "coding_label": "booster_word", "coding_options": [], "required": false}, {"name": "match", "role": "highlight", "coding_type": "binary", "coding_label": "match", "coding_options": [], "required": false}, {"name": "URL", "role": "display", "coding_type": "binary", "coding_label": "URL", "coding_options": [], "required": false}, {"name": "Sentence_plain", "role": "main_text", "coding_type": "binary", "coding_label": "Sentence_plain", "coding_options": [], "required": false}, {"name": "Is_Booster", "role": "coding", "coding_type": "binary", "coding_label": "Is_Booster", "coding_options": [], "required": true}, {"name": "Self-focused ", "role": "coding", "coding_type": "binary", "coding_label": "Self-focused ", "coding_options": [], "required": false}, {"name": "Student-focused", "role": "coding", "coding_type": "binary", "coding_label": "Student-focused", "coding_options": [], "required": false}];
 /*
   SCHEMA is an array of objects:
   {
@@ -300,16 +300,38 @@ function renderCards() {
     // ── Highlight field ──
     const hlField = SCHEMA.find(s => s.role === 'highlight');
     let tagsHtml = '';
-    if (hlField) {
-      const terms = Array.isArray(row[hlField.name]) ? row[hlField.name] : [];
-      terms.forEach(t => {
-        mainText = mainText.replace(
-          new RegExp('(' + escRegex(escHtml(t)) + ')', 'gi'),
-          '<span class="highlight">$1</span>'
-        );
-      });
-      tagsHtml = terms.map(t => `<span class="tag">${escHtml(t)}</span>`).join('');
+if (hlField) {
+  // Support: single string, comma-separated string, or JSON array
+  const raw = row[hlField.name];
+  let terms = [];
+  if (Array.isArray(raw)) {
+    terms = raw.map(t => String(t).trim()).filter(Boolean);
+  } else if (typeof raw === 'string' && raw.trim()) {
+    // Try JSON array first, then fall back to single word
+    try {
+      const parsed = JSON.parse(raw);
+      terms = Array.isArray(parsed)
+        ? parsed.map(t => String(t).trim()).filter(Boolean)
+        : [raw.trim()];
+    } catch {
+      // Plain single word (your case: "very", "always", etc.)
+      terms = [raw.trim()];
     }
+  }
+
+  // Case-insensitive highlight, preserve original casing in text
+  terms.forEach(t => {
+    if (!t) return;
+    mainText = mainText.replace(
+      new RegExp('(' + escRegex(escHtml(t)) + ')', 'gi'),
+      '<span class="highlight">$1</span>'
+    );
+  });
+
+  // Show tag with the original value from CSV
+  tagsHtml = terms.map(t => `<span class="tag">${escHtml(t)}</span>`).join('');
+}
+
 
     // ── Coding fields ──
     const codingFields = SCHEMA.filter(s => s.role === 'coding');
