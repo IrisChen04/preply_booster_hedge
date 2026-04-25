@@ -200,7 +200,7 @@ let answers     = {};
 let currentPage = 1;
 let pageSize    = 10;
 
-const STORAGE_KEY = 'answers_' + CODER_ID;
+const STORAGE_KEY = 'answers_' + CODER_ID+'20260425';
 
 fetch(DATA_FILE)
   .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
