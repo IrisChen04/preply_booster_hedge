@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Data Validation – Coder 1</title>
+<title>Data Validation – Coder 2</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
@@ -64,6 +64,7 @@
     border-left: 4px solid #e5e7eb; transition: border-color 0.2s, background 0.2s;
   }
   .card.coded { border-left-color: #4f46e5; background: #f8f7ff; }
+  .card.flagged { border-left-color: #dc2626; background: #fff8f8; }
 
   .card-row { display: flex; align-items: flex-start; gap: 12px; }
   .card-body { flex: 1; min-width: 0; }
@@ -81,34 +82,15 @@
   .tag { background: #ede9fe; color: #4f46e5; padding: 2px 8px;
          border-radius: 20px; font-size: 11px; font-weight: 600; }
 
-  /* ── Coding fields 横排 ── */
-  .coding-fields {
-    display: flex;
-    flex-direction: row;      /* ← 关键：横排 */
-    flex-wrap: wrap;
-    gap: 12px;
-    align-items: flex-end;
-    border-top: 1px solid #f0f0f0;
-    padding-top: 10px;
-    margin-top: 6px;
-  }
-
-  /* 每个字段组：label在上，控件在下，竖向排列 */
-  .field-group {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .field-label {
-    font-size: 11px; font-weight: 700; color: #555;
-    text-transform: uppercase; letter-spacing: 0.4px;
-    white-space: nowrap;
-  }
+  /* ── Coding fields ── */
+  .coding-fields { display: flex; flex-direction: column; gap: 10px;
+                   border-top: 1px solid #f0f0f0; padding-top: 10px; margin-top: 6px; }
+  .field-group { display: flex; flex-direction: column; gap: 4px; }
+  .field-label { font-size: 11px; font-weight: 700; color: #555;
+                 text-transform: uppercase; letter-spacing: 0.4px; }
   .field-label .req { color: #dc2626; margin-left: 2px; }
 
-  /* radio / checkbox */
+  /* ── CHANGED: radio / checkbox 选项并排 ── */
   .radio-group, .checkbox-group {
     display: flex; flex-direction: row; gap: 10px; flex-wrap: wrap;
   }
@@ -144,18 +126,15 @@
   .scale-btn:hover { border-color: #4f46e5; color: #4f46e5; }
   .scale-btn.active { background: #4f46e5; border-color: #4f46e5; color: #fff; }
 
-  /* binary YES button — green */
-  .btn-yes {
-    flex-shrink: 0;
-    min-width: 52px; height: 36px;
-    border: 2px solid #ddd; border-radius: 8px;
-    background: #fff; font-size: 12px; font-weight: 700;
+  /* ── CHANGED: binary YES button (原来是红色NO) ── */
+  .btn-no {
+    flex-shrink: 0; width: 48px; height: 48px; border: 2px solid #ddd;
+    border-radius: 8px; background: #fff; font-size: 12px; font-weight: 700;
     color: #bbb; cursor: pointer; transition: all 0.15s;
     display: flex; align-items: center; justify-content: center;
-    padding: 0 10px;
   }
-  .btn-yes:hover { border-color: #16a34a; color: #16a34a; background: #f0fdf4; }
-  .btn-yes.active { background: #16a34a; border-color: #16a34a; color: #fff; }
+  .btn-no:hover { border-color: #16a34a; color: #16a34a; background: #f0fdf4; }
+  .btn-no.active { background: #16a34a; border-color: #16a34a; color: #fff; }
 
   .pagination {
     display: flex; justify-content: center; align-items: center;
@@ -177,7 +156,7 @@
 <header>
   <div class="header-left">
     <span class="header-title">Data Validation</span>
-    <span class="badge">Coder 1</span>
+    <span class="badge">Coder 2</span>
   </div>
   <button class="btn-dl" id="dlBtn" onclick="downloadCSV()" disabled>⬇ Download CSV</button>
 </header>
@@ -211,26 +190,16 @@
 <div class="pagination" id="paginationArea"></div>
 
 <script>
-const CODER_ID   = 'coder_1';
-const CODER_NAME = 'Coder 1';
-const DATA_FILE  = 'data/coder_1_data.json';
-const SCHEMA = [
-  {"name": "row_index",      "role": "display",   "coding_type": "binary", "coding_label": "row_index",      "coding_options": [], "required": false},
-  {"name": "Sentence_Index", "role": "display",   "coding_type": "binary", "coding_label": "Sentence_Index", "coding_options": [], "required": false},
-  {"name": "booster_word",   "role": "display",   "coding_type": "binary", "coding_label": "booster_word",   "coding_options": [], "required": false},
-  {"name": "left_context",   "role": "display",   "coding_type": "binary", "coding_label": "left_context",   "coding_options": [], "required": false},
-  {"name": "match",          "role": "highlight", "coding_type": "binary", "coding_label": "match",          "coding_options": [], "required": false},
-  {"name": "URL",            "role": "display",   "coding_type": "binary", "coding_label": "URL",            "coding_options": [], "required": false},
-  {"name": "Sentence_plain", "role": "main_text", "coding_type": "binary", "coding_label": "Sentence_plain", "coding_options": [], "required": false},
-  {"name": "Is_Booster",     "role": "coding",    "coding_type": "binary", "coding_label": "Is_Booster",     "coding_options": [], "required": false},
-  {"name": "Self-focused",   "role": "coding",    "coding_type": "binary", "coding_label": "Self-focused",   "coding_options": [], "required": false},
-  {"name": "Student-focused","role": "coding",    "coding_type": "binary", "coding_label": "Student-focused","coding_options": [], "required": false}
-];
+const CODER_ID   = 'coder_2';
+const CODER_NAME = 'Coder 2';
+const DATA_FILE  = 'data/coder_2_data.json';
+const SCHEMA = [{"name": "Sentence_Index", "role": "display", "coding_type": "binary", "coding_label": "Sentence_Index", "coding_options": [], "required": false}, {"name": "booster_word", "role": "highlight", "coding_type": "binary", "coding_label": "booster_word", "coding_options": [], "required": false}, {"name": "URL", "role": "display", "coding_type": "binary", "coding_label": "URL", "coding_options": [], "required": false}, {"name": "Sentence_plain", "role": "main_text", "coding_type": "binary", "coding_label": "Sentence_plain", "coding_options": [], "required": false}, {"name": "Is_Booster", "role": "coding", "coding_type": "binary", "coding_label": "Is_Booster", "coding_options": [], "required": false}];
 
 let allData     = [];
 let answers     = {};
 let currentPage = 1;
 let pageSize    = 10;
+
 const STORAGE_KEY = 'answers_' + CODER_ID;
 
 fetch(DATA_FILE)
@@ -248,18 +217,11 @@ fetch(DATA_FILE)
 
 function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(answers)); }
 
-// ── isRowCoded: binary字段只要有过交互（answers[idx]存在该key）就算coded ──
 function isRowCoded(idx) {
   const a = answers[idx];
   if (!a) return false;
   const codingFields = SCHEMA.filter(s => s.role === 'coding');
   if (codingFields.length === 0) return false;
-  // 只要所有 required 字段都有值，或没有 required 字段但至少点过一个
-  const hasRequired = codingFields.some(f => f.required);
-  if (!hasRequired) {
-    // 没有必填项：只要 answers[idx] 里有任意一个 coding 字段的 key 就算 coded
-    return codingFields.some(f => f.name in a);
-  }
   return codingFields.every(f => {
     if (!f.required) return true;
     const v = a[f.name];
@@ -302,19 +264,17 @@ function renderCards() {
   if (!slice.length) { area.innerHTML = '<div class="empty">No items.</div>'; return; }
 
   area.innerHTML = slice.map((row, localIdx) => {
-    const gi    = start + localIdx;
+    const gi = start + localIdx;
     const coded = isRowCoded(gi);
 
-    // meta
-    const metaHtml = SCHEMA.filter(s => s.role === 'display').map(f =>
+    const displayFields = SCHEMA.filter(s => s.role === 'display');
+    const metaHtml = displayFields.map(f =>
       `<div class="meta-item">${escHtml(f.name)}: <span>${escHtml(row[f.name] ?? '')}</span></div>`
     ).join('');
 
-    // main text
     const mainField = SCHEMA.find(s => s.role === 'main_text');
     let mainText = mainField ? escHtml(row[mainField.name] ?? '') : '';
 
-    // highlight
     const hlField = SCHEMA.find(s => s.role === 'highlight');
     let tagsHtml = '';
     if (hlField) {
@@ -328,7 +288,9 @@ function renderCards() {
           terms = Array.isArray(parsed)
             ? parsed.map(t => String(t).trim()).filter(Boolean)
             : [raw.trim()];
-        } catch { terms = [raw.trim()]; }
+        } catch {
+          terms = [raw.trim()];
+        }
       }
       terms.forEach(t => {
         if (!t) return;
@@ -340,7 +302,6 @@ function renderCards() {
       tagsHtml = terms.map(t => `<span class="tag">${escHtml(t)}</span>`).join('');
     }
 
-    // coding fields
     const codingFields = SCHEMA.filter(s => s.role === 'coding');
     const codingHtml = codingFields.length ? `
       <div class="coding-fields">
@@ -356,24 +317,29 @@ function renderCards() {
             ${tagsHtml ? `<div class="highlight-tags">${tagsHtml}</div>` : ''}
             ${codingHtml}
           </div>
+          ${codingFields.length === 0 ? renderBinaryButton(gi) : ''}
         </div>
       </div>`;
   }).join('');
 }
 
-// ── renderCodingField ─────────────────────────────────────────────────────
+// ── CHANGED: 文字改为 YES ──
+function renderBinaryButton(gi) {
+  const active = answers[gi]?.['_binary'] === 1;
+  return `<button class="btn-no ${active ? 'active' : ''}" onclick="toggleBinary(${gi}, this)">YES</button>`;
+}
+
 function renderCodingField(f, gi) {
   const current = answers[gi]?.[f.name];
-  const req     = f.required ? '<span class="req">*</span>' : '';
+  const req = f.required ? '<span class="req">*</span>' : '';
 
-  // ── binary: label上方，YES按钮下方，整体横排 ──
   if (f.coding_type === 'binary') {
     const active = current === 1 || current === '1';
     return `
       <div class="field-group">
         <div class="field-label">${escHtml(f.coding_label || f.name)}${req}</div>
-        <button class="btn-yes ${active ? 'active' : ''}"
-                onclick="setCoding(${gi}, '${escJs(f.name)}', ${active ? 0 : 1}, this, 'binary')">
+        <button class="btn-no ${active ? 'active' : ''}"
+                onclick="setCoding(${gi}, '${f.name}', ${active ? 0 : 1}, this, 'binary')">
           YES
         </button>
       </div>`;
@@ -382,13 +348,13 @@ function renderCodingField(f, gi) {
   if (f.coding_type === 'radio') {
     const opts = f.coding_options.map(o => `
       <label>
-        <input type="radio" name="r_${gi}_${escJs(f.name)}" value="${escHtml(o)}"
+        <input type="radio" name="r_${gi}_${f.name}" value="${escHtml(o)}"
           ${current === o ? 'checked' : ''}
-          onchange="setCoding(${gi}, '${escJs(f.name)}', this.value, null, 'radio')">
+          onchange="setCoding(${gi}, '${f.name}', this.value, null, 'radio')">
         <span>${escHtml(o)}</span>
       </label>`).join('');
     return `
-      <div class="field-group" style="align-items:flex-start">
+      <div class="field-group">
         <div class="field-label">${escHtml(f.coding_label || f.name)}${req}</div>
         <div class="radio-group">${opts}</div>
       </div>`;
@@ -399,11 +365,12 @@ function renderCodingField(f, gi) {
       `<option value="${escHtml(o)}" ${current === o ? 'selected' : ''}>${escHtml(o)}</option>`
     ).join('');
     return `
-      <div class="field-group" style="align-items:flex-start">
+      <div class="field-group">
         <div class="field-label">${escHtml(f.coding_label || f.name)}${req}</div>
         <select class="field-select"
-                onchange="setCoding(${gi}, '${escJs(f.name)}', this.value, null, 'dropdown')">
-          <option value="">— select —</option>${opts}
+                onchange="setCoding(${gi}, '${f.name}', this.value, null, 'dropdown')">
+          <option value="">— select —</option>
+          ${opts}
         </select>
       </div>`;
   }
@@ -414,11 +381,11 @@ function renderCodingField(f, gi) {
       <label>
         <input type="checkbox" value="${escHtml(o)}"
           ${currentArr.includes(o) ? 'checked' : ''}
-          onchange="setCheckbox(${gi}, '${escJs(f.name)}', '${escJs(o)}', this.checked)">
+          onchange="setCheckbox(${gi}, '${f.name}', '${escHtml(o)}', this.checked)">
         <span>${escHtml(o)}</span>
       </label>`).join('');
     return `
-      <div class="field-group" style="align-items:flex-start">
+      <div class="field-group">
         <div class="field-label">${escHtml(f.coding_label || f.name)}${req}</div>
         <div class="checkbox-group">${opts}</div>
       </div>`;
@@ -426,10 +393,11 @@ function renderCodingField(f, gi) {
 
   if (f.coding_type === 'text') {
     return `
-      <div class="field-group" style="align-items:flex-start;flex:1;min-width:180px">
+      <div class="field-group">
         <div class="field-label">${escHtml(f.coding_label || f.name)}${req}</div>
         <textarea class="field-text" rows="2"
-          oninput="setCoding(${gi}, '${escJs(f.name)}', this.value, null, 'text')"
+          onchange="setCoding(${gi}, '${f.name}', this.value, null, 'text')"
+          oninput="setCoding(${gi}, '${f.name}', this.value, null, 'text')"
         >${escHtml(current ?? '')}</textarea>
       </div>`;
   }
@@ -437,10 +405,10 @@ function renderCodingField(f, gi) {
   if (f.coding_type === 'scale') {
     const opts = f.coding_options.map(o => `
       <button class="scale-btn ${current == o ? 'active' : ''}"
-              onclick="setCoding(${gi}, '${escJs(f.name)}', ${o}, this, 'scale')">${o}</button>`
+              onclick="setCoding(${gi}, '${f.name}', ${o}, this, 'scale')">${o}</button>`
     ).join('');
     return `
-      <div class="field-group" style="align-items:flex-start">
+      <div class="field-group">
         <div class="field-label">${escHtml(f.coding_label || f.name)}${req}</div>
         <div class="scale-group">${opts}</div>
       </div>`;
@@ -449,21 +417,25 @@ function renderCodingField(f, gi) {
   return '';
 }
 
-// Escape for use inside JS string literals in onclick attributes
-function escJs(s) {
-  return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-}
-
-// ── Answer setters ────────────────────────────────────────────────────────
 function ensureAnswer(gi) { if (!answers[gi]) answers[gi] = {}; }
+
+function toggleBinary(gi, btn) {
+  ensureAnswer(gi);
+  const current = answers[gi]['_binary'] === 1;
+  answers[gi]['_binary'] = current ? 0 : 1;
+  btn.classList.toggle('active', !current);
+  save(); refreshCard(gi); updateStats();
+}
 
 function setCoding(gi, fieldName, value, btn, type) {
   ensureAnswer(gi);
   answers[gi][fieldName] = value;
-  if ((type === 'binary' || type === 'scale') && btn) {
-    const parent = btn.closest('.field-group');
-    parent.querySelectorAll('.btn-yes, .scale-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+  if (type === 'binary' || type === 'scale') {
+    if (btn) {
+      const parent = btn.closest('.field-group');
+      parent.querySelectorAll('.btn-no, .scale-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
   }
   save(); refreshCard(gi); updateStats();
 }
@@ -480,19 +452,21 @@ function setCheckbox(gi, fieldName, option, checked) {
 function refreshCard(gi) {
   const card = document.getElementById('card-' + gi);
   if (!card) return;
-  card.classList.toggle('coded', isRowCoded(gi));
+  if (isRowCoded(gi)) card.classList.add('coded');
+  else card.classList.remove('coded');
 }
 
-// ── Pagination ────────────────────────────────────────────────────────────
 function changePageSize() {
   pageSize = parseInt(document.getElementById('pageSize').value);
   currentPage = 1; render();
 }
+
 function goToPage(p) {
   const total = Math.ceil(allData.length / pageSize);
   currentPage = Math.max(1, Math.min(p, total || 1));
   render();
 }
+
 function renderPagination() {
   const total = Math.ceil(allData.length / pageSize);
   document.getElementById('pageInfo').textContent = 'Page ' + currentPage + ' of ' + (total || 1);
@@ -508,6 +482,7 @@ function renderPagination() {
            <button class="pg-btn" onclick="goToPage(${total})" ${currentPage===total?'disabled':''}>»</button>`;
   area.innerHTML = html;
 }
+
 function pageRange(cur, total) {
   if (total <= 7) return Array.from({length: total}, (_, i) => i + 1);
   if (cur <= 4)   return [1,2,3,4,5,'...',total];
@@ -515,32 +490,41 @@ function pageRange(cur, total) {
   return [1,'...',cur-1,cur,cur+1,'...',total];
 }
 
-// ── CSV Export ────────────────────────────────────────────────────────────
 function downloadCSV() {
   const codingFields = SCHEMA.filter(s => s.role === 'coding');
-  const nonCoding    = SCHEMA.filter(s => s.role !== 'coding');
-  const header = [...nonCoding.map(s => s.name), ...codingFields.map(s => s.name)];
-  const rows   = [header];
+  const hasBinary    = codingFields.length === 0;
+  const header = [
+    ...SCHEMA.filter(s => s.role !== 'coding').map(s => s.name),
+    ...(hasBinary ? ['flagged'] : codingFields.map(s => s.name))
+  ];
+  const rows = [header];
   allData.forEach((row, i) => {
-    const ans  = answers[i] || {};
+    const ans = answers[i] || {};
     const line = [
-      ...nonCoding.map(s => {
+      ...SCHEMA.filter(s => s.role !== 'coding').map(s => {
         const v = row[s.name] ?? '';
-        return '"' + (Array.isArray(v) ? v.join('; ') : String(v)).replace(/"/g,'""') + '"';
+        const str = Array.isArray(v) ? v.join('; ') : String(v);
+        return '"' + str.replace(/"/g, '""') + '"';
       }),
-      ...codingFields.map(f => {
-        const v = ans[f.name] ?? '';
-        return '"' + (Array.isArray(v) ? v.join('; ') : String(v)).replace(/"/g,'""') + '"';
-      })
+      ...(hasBinary
+        ? [ans['_binary'] === 1 ? '1' : '0']
+        : codingFields.map(f => {
+            const v = ans[f.name] ?? '';
+            const str = Array.isArray(v) ? v.join('; ') : String(v);
+            return '"' + str.replace(/"/g, '""') + '"';
+          })
+      )
     ];
     rows.push(line);
   });
   const csv  = rows.map(r => r.join(',')).join('\n');
-  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8'});
+  const blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8'});
   const a    = Object.assign(document.createElement('a'), {
-    href: URL.createObjectURL(blob), download: CODER_ID + '_results.csv'
+    href: URL.createObjectURL(blob),
+    download: CODER_ID + '_results.csv'
   });
-  a.click(); URL.revokeObjectURL(a.href);
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 </script>
 </body>
