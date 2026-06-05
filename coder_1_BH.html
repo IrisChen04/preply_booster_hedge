@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Validation – Coder 1</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+         background: #f4f4f6; color: #1a1a1a; font-size: 14px; }
+
+  header {
+    background: #fff; border-bottom: 3px solid #4f46e5;
+    padding: 14px 32px; display: flex; justify-content: space-between;
+    align-items: center; position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .header-title { font-size: 17px; font-weight: 700; }
+  .badge { background: #4f46e5; color: #fff; padding: 3px 10px;
+           border-radius: 20px; font-size: 12px; font-weight: 600; }
+
+  .statsbar {
+    max-width: 900px; margin: 16px auto 0; padding: 0 20px;
+    display: flex; background: #fff; border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06); overflow: hidden;
+  }
+  .stat { flex: 1; text-align: center; padding: 12px 8px;
+          border-right: 1px solid #f0f0f0; }
+  .stat:last-child { border-right: none; }
+  .stat-val { font-size: 22px; font-weight: 800; color: #4f46e5; line-height: 1; }
+  .stat-label { font-size: 10px; color: #999; text-transform: uppercase;
+                letter-spacing: 0.4px; margin-top: 3px; }
+
+  .progress-wrap { max-width: 900px; margin: 8px auto 0; padding: 0 20px; }
+  .progress-bg { background: #e5e7eb; border-radius: 99px; height: 6px; overflow: hidden; }
+  .progress-fill { height: 100%; background: #4f46e5; border-radius: 99px; transition: width 0.4s; }
+  .progress-text { font-size: 11px; color: #aaa; margin-top: 3px; text-align: right; }
+
+  .controls {
+    max-width: 900px; margin: 10px auto 0; padding: 0 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 8px;
+  }
+  .filter-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .filter-group label { font-size: 12px; font-weight: 600; color: #666; }
+  select { padding: 5px 10px; border: 1px solid #ddd; border-radius: 6px;
+           font-size: 12px; background: #fff; cursor: pointer; }
+  select:focus { outline: none; border-color: #4f46e5; }
+  .pg-info { font-size: 12px; color: #aaa; }
+
+  .btn-dl {
+    padding: 6px 14px; background: #16a34a; color: #fff; border: none;
+    border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  .btn-dl:hover { background: #15803d; }
+  .btn-dl:disabled { background: #ccc; cursor: not-allowed; }
+
+  .main { max-width: 900px; margin: 14px auto; padding: 0 20px 40px; }
+
+  .card {
+    background: #fff; border-radius: 8px; margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06); padding: 14px 16px;
+    border-left: 4px solid #e5e7eb; transition: border-color 0.2s, background 0.2s;
+  }
+  .card.coded   { border-left-color: #4f46e5; background: #f8f7ff; }
+  .card.flagged { border-left-color: #dc2626; background: #fff8f8; }
+
+  .card-row  { display: flex; align-items: flex-start; gap: 12px; }
+  .card-body { flex: 1; min-width: 0; }
+
+  .card-meta { display: flex; align-items: center; gap: 12px;
+               margin-bottom: 6px; flex-wrap: wrap; }
+  .meta-item { font-size: 11px; color: #999; }
+  .meta-item span { font-weight: 700; color: #555; }
+
+  .sentence-box { font-size: 14px; line-height: 1.75; color: #1a1a1a; margin-bottom: 8px; }
+  .highlight { background: #fef9c3; padding: 1px 4px; border-radius: 3px;
+               font-weight: 700; border-bottom: 2px solid #facc15; }
+
+  .highlight-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tag { background: #ede9fe; color: #4f46e5; padding: 2px 8px;
+         border-radius: 20px; font-size: 11px; font-weight: 600; }
+
+  .coding-fields { display: flex; flex-direction: column; gap: 10px;
+                   border-top: 1px solid #f0f0f0; padding-top: 10px; margin-top: 6px; }
+  .field-group { display: flex; flex-direction: column; gap: 4px; }
+  .field-label { font-size: 11px; font-weight: 700; color: #555;
+                 text-transform: uppercase; letter-spacing: 0.4px; }
+  .field-label .req { color: #dc2626; margin-left: 2px; }
+
+  .radio-group, .checkbox-group {
+    display: flex; flex-direction: row; gap: 10px; flex-wrap: wrap;
+  }
+  .radio-group label, .checkbox-group label {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 13px; cursor: pointer; padding: 3px 8px;
+    border: 1px solid #ddd; border-radius: 6px; background: #fafafa;
+    transition: all 0.15s;
+  }
+  .radio-group label:hover, .checkbox-group label:hover { border-color: #4f46e5; background: #f0f0ff; }
+  .radio-group input[type=radio]:checked + span,
+  .checkbox-group input[type=checkbox]:checked + span { color: #4f46e5; font-weight: 700; }
+
+  .field-select { padding: 5px 10px; border: 1px solid #ddd; border-radius: 6px;
+                  font-size: 13px; background: #fff; max-width: 260px; }
+  .field-select:focus { outline: none; border-color: #4f46e5; }
+
+  .field-text { padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px;
+                font-size: 13px; width: 100%; resize: vertical; min-height: 60px;
+                font-family: inherit; }
+  .field-text:focus { outline: none; border-color: #4f46e5; }
+
+  .scale-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  .scale-btn {
+    width: 36px; height: 36px; border: 2px solid #ddd; border-radius: 6px;
+    background: #fff; font-size: 13px; font-weight: 700; color: #aaa;
+    cursor: pointer; transition: all 0.15s; display: flex;
+    align-items: center; justify-content: center;
+  }
+  .scale-btn:hover { border-color: #4f46e5; color: #4f46e5; }
+  .scale-btn.active { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+
+  .btn-no {
+    flex-shrink: 0; width: 48px; height: 48px; border: 2px solid #ddd;
+    border-radius: 8px; background: #fff; font-size: 12px; font-weight: 700;
+    color: #bbb; cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .btn-no:hover { border-color: #16a34a; color: #16a34a; background: #f0fdf4; }
+  .btn-no.active { background: #16a34a; border-color: #16a34a; color: #fff; }
+
+  .pagination {
+    display: flex; justify-content: center; align-items: center;
+    gap: 6px; margin: 16px 0 8px; flex-wrap: wrap;
+  }
+  .pg-btn { padding: 5px 12px; border: 1px solid #ddd; border-radius: 6px;
+            background: #fff; font-size: 12px; cursor: pointer;
+            color: #4f46e5; font-weight: 500; }
+  .pg-btn:hover:not(:disabled) { background: #f0f0f0; }
+  .pg-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .pg-btn.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+
+  .empty   { text-align: center; padding: 60px; color: #aaa; }
+  .loading { text-align: center; padding: 60px; color: #4f46e5; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <span class="header-title">Data Validation</span>
+    <span class="badge">Coder 1</span>
+  </div>
+  <button class="btn-dl" id="dlBtn" onclick="downloadCSV()" disabled>⬇ Download CSV</button>
+</header>
+
+<div class="statsbar">
+  <div class="stat"><div class="stat-val" id="sTotal">0</div><div class="stat-label">Total</div></div>
+  <div class="stat"><div class="stat-val" id="sCoded">0</div><div class="stat-label">Coded</div></div>
+  <div class="stat"><div class="stat-val" id="sRemain">0</div><div class="stat-label">Remaining</div></div>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-bg"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  <div class="progress-text" id="progressText">0 / 0 coded</div>
+</div>
+
+<div class="controls">
+  <div class="filter-group">
+    <label>Per page:</label>
+    <select id="pageSize" onchange="changePageSize()">
+      <option value="10" selected>10</option>
+      <option value="25">25</option>
+      <option value="50">50</option>
+    </select>
+  </div>
+  <div class="pg-info" id="pageInfo">Page 1 of 1</div>
+</div>
+
+<div class="main" id="cardArea">
+  <div class="loading">Loading data…</div>
+</div>
+<div class="pagination" id="paginationArea"></div>
+
+<script>
+const CODER_ID   = 'coder_1';
+const CODER_NAME = 'Coder 1';
+const DATA_FILE  = 'data/coder_1_data_BH.json';
+const SCHEMA = [{"name": "id", "role": "display", "coding_type": "binary", "coding_label": "id", "coding_options": [], "required": false}, {"name": "text", "role": "main_text", "coding_type": "binary", "coding_label": "text", "coding_options": [], "required": false}, {"name": "bh_label", "role": "display", "coding_type": "binary", "coding_label": "bh_label", "coding_options": [], "required": false}, {"name": "bh_hedge", "role": "highlight", "coding_type": "binary", "coding_label": "bh_hedge", "coding_options": [], "required": false}, {"name": "bh_booster", "role": "highlight", "coding_type": "binary", "coding_label": "bh_booster", "coding_options": [], "required": false}, {"name": "bh_reason", "role": "display", "coding_type": "binary", "coding_label": "bh_reason", "coding_options": [], "required": false}, {"name": "TF", "role": "coding", "coding_type": "binary", "coding_label": "TF", "coding_options": [], "required": false}];
+
+let allData     = [];
+let answers     = {};
+let currentPage = 1;
+let pageSize    = 10;
+
+const STORAGE_KEY = 'answers_BH' + CODER_ID;
+
+fetch(DATA_FILE)
+  .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  .then(data => {
+    allData = data;
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) { try { answers = JSON.parse(saved); } catch(e) { answers = {}; } }
+    render();
+  })
+  .catch(err => {
+    document.getElementById('cardArea').innerHTML =
+      '<div class="empty">⚠️ Could not load <code>' + DATA_FILE + '</code><br>' + err + '</div>';
+  });
+
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(answers)); }
+
+function isRowCoded(idx) {
+  const a = answers[idx];
+  if (!a) return false;
+  const codingFields = SCHEMA.filter(s => s.role === 'coding');
+  if (codingFields.length === 0) return false;
+  return codingFields.every(f => {
+    if (!f.required) return true;
+    const v = a[f.name];
+    if (v === undefined || v === null || v === '') return false;
+    if (Array.isArray(v) && v.length === 0) return false;
+    return true;
+  });
+}
+
+function countCoded() {
+  return allData.reduce((n, _, i) => n + (isRowCoded(i) ? 1 : 0), 0);
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+
+function render() { updateStats(); renderCards(); renderPagination(); }
+
+function updateStats() {
+  const total  = allData.length;
+  const coded  = countCoded();
+  const remain = total - coded;
+  const pct    = total ? (coded / total * 100).toFixed(1) : 0;
+  document.getElementById('sTotal').textContent  = total;
+  document.getElementById('sCoded').textContent  = coded;
+  document.getElementById('sRemain').textContent = remain;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = coded + ' / ' + total + ' coded (' + pct + '%)';
+  document.getElementById('dlBtn').disabled = coded === 0;
+}
+
+function renderCards() {
+  const area  = document.getElementById('cardArea');
+  const start = (currentPage - 1) * pageSize;
+  const slice = allData.slice(start, start + pageSize);
+  if (!slice.length) { area.innerHTML = '<div class="empty">No items.</div>'; return; }
+
+  area.innerHTML = slice.map((row, localIdx) => {
+    const gi = start + localIdx;
+    const coded = isRowCoded(gi);
+
+    const displayFields = SCHEMA.filter(s => s.role === 'display');
+    const metaHtml = displayFields.map(f =>
+      `<div class="meta-item">${escHtml(f.name)}: <span>${escHtml(row[f.name] ?? '')}</span></div>`
+    ).join('');
+
+    const mainField = SCHEMA.find(s => s.role === 'main_text');
+    let mainText = mainField ? escHtml(row[mainField.name] ?? '') : '';
+
+    const hlField = SCHEMA.find(s => s.role === 'highlight');
+    let tagsHtml = '';
+    if (hlField) {
+      const raw = row[hlField.name];
+      let terms = [];
+      if (Array.isArray(raw)) {
+        terms = raw.map(t => String(t).trim()).filter(Boolean);
+      } else if (typeof raw === 'string' && raw.trim()) {
+        try {
+          const parsed = JSON.parse(raw);
+          terms = Array.isArray(parsed)
+            ? parsed.map(t => String(t).trim()).filter(Boolean)
+            : [raw.trim()];
+        } catch {
+          terms = [raw.trim()];
+        }
+      }
+      terms.forEach(t => {
+        if (!t) return;
+        mainText = mainText.replace(
+          new RegExp('(' + escRegex(escHtml(t)) + ')', 'gi'),
+          '<span class="highlight">$1</span>'
+        );
+      });
+      tagsHtml = terms.map(t => `<span class="tag">${escHtml(t)}</span>`).join('');
+    }
+
+    const codingFields = SCHEMA.filter(s => s.role === 'coding');
+    const codingHtml = codingFields.length ? `
+      <div class="coding-fields">
+        ${codingFields.map(f => renderCodingField(f, gi)).join('')}
+      </div>` : '';
+
+    return `
+      <div class="card ${coded ? 'coded' : ''}" id="card-${gi}">
+        <div class="card-row">
+          <div class="card-body">
+            <div class="card-meta">${metaHtml}</div>
+            <div class="sentence-box">${mainText}</div>
+            ${tagsHtml ? `<div class="highlight-tags">${tagsHtml}</div>` : ''}
+            ${codingHtml}
+          </div>
+          ${codingFields.length === 0 ? renderBinaryButton(gi) : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderBinaryButton(gi) {
+  const active = answers[gi]?.['_binary'] === 1;
+  return `<button class="btn-no ${active ? 'active' : ''}" onclick="toggleBinary(${gi}, this)">YES</button>`;
+}
+
+function renderCodingField(f, gi) {
+  const current = answers[gi]?.[f.name];
+  const req = f.required ? '<span class="req">*</span>' : '';
+
+  if (f.coding_type === 'binary') {
+    const active = current === 1 || current === '1';
+    return `
+      <div class="field-group">
+        <div class="field-label">${escHtml(f.coding_label || f.name)}${req}</div>
+        <button class="btn-no ${active ? 'active' : ''}"
+                onclick="setCoding(${gi}, '${f.name}', null, this, 'binary')">
+          YES
+        </button>
+      </div>`;
+  }
+
+  if (f.coding_type === 'radio') {
+    const opts = f.coding_options.map(o => `
+      <label>
+        <input type="radio" name="r_${gi}_${f.name}" value="${escHtml(o)}"
+          ${current === o ? 'checked' : ''}
+          onchange="setCoding(${gi}, '${f.name}', this.value, null, 'radio')">
+        <span>${escHtml(o)}</span>
+      </label>`).join('');
+    return `
+      <div class="field-group">
+        <div class="field-label">${escHtml(f.coding_label || f.name)}${req}</div>
+        <div class="radio-group">${opts}</div>
+      </div>`;
+  }
+
+  if (f.coding_type === 'dropdown') {
+    const opts = f.coding_options.map(o =>
+      `<option value="${escHtml(o)}" ${current === o ? 'selected' : ''}>${escHtml(o)}</option>`
+    ).join('');
+    return `
+      <div class="field-group">
+        <div class="field-label">${escHtml(f.coding_label || f.name)}${req}</div>
+        <select class="field-select"
+                onchange="setCoding(${gi}, '${f.name}', this.value, null, 'dropdown')">
+          <option value="">— select —</option>
+          ${opts}
+        </select>
+      </div>`;
+  }
+
+  if (f.coding_type === 'checkbox') {
+    const currentArr = Array.isArray(current) ? current : [];
+    const opts = f.coding_options.map(o => `
+      <label>
+        <input type="checkbox" value="${escHtml(o)}"
+          ${currentArr.includes(o) ? 'checked' : ''}
+          onchange="setCheckbox(${gi}, '${f.name}', '${escHtml(o)}', this.checked)">
+        <span>${escHtml(o)}</span>
+      </label>`).join('');
+    return `
+      <div class="field-group">
+        <div class="field-label">${escHtml(f.coding_label || f.name)}${req}</div>
+        <div class="checkbox-group">${opts}</div>
+      </div>`;
+  }
+
+  if (f.coding_type === 'text') {
+    return `
+      <div class="field-group">
+        <div class="field-label">${escHtml(f.coding_label || f.name)}${req}</div>
+        <textarea class="field-text" rows="2"
+          onchange="setCoding(${gi}, '${f.name}', this.value, null, 'text')"
+          oninput="setCoding(${gi}, '${f.name}', this.value, null, 'text')"
+        >${escHtml(current ?? '')}</textarea>
+      </div>`;
+  }
+
+  if (f.coding_type === 'scale') {
+    const opts = f.coding_options.map(o => `
+      <button class="scale-btn ${current == o ? 'active' : ''}"
+              onclick="setCoding(${gi}, '${f.name}', ${o}, this, 'scale')">${o}</button>`
+    ).join('');
+    return `
+      <div class="field-group">
+        <div class="field-label">${escHtml(f.coding_label || f.name)}${req}</div>
+        <div class="scale-group">${opts}</div>
+      </div>`;
+  }
+
+  return '';
+}
+
+function ensureAnswer(gi) { if (!answers[gi]) answers[gi] = {}; }
+
+function toggleBinary(gi, btn) {
+  ensureAnswer(gi);
+  const current = answers[gi]['_binary'] === 1;
+  answers[gi]['_binary'] = current ? 0 : 1;
+  btn.classList.toggle('active', !current);
+  save(); refreshCard(gi); updateStats();
+}
+
+// ── FIXED: binary 支持 toggle 取消 ──
+function setCoding(gi, fieldName, value, btn, type) {
+  ensureAnswer(gi);
+
+  if (type === 'binary') {
+    const current = answers[gi][fieldName];
+    const isActive = current === 1 || current === '1';
+    const newVal = isActive ? 0 : 1;
+    answers[gi][fieldName] = newVal;
+    if (btn) btn.classList.toggle('active', newVal === 1);
+    save(); refreshCard(gi); updateStats();
+    return;
+  }
+
+  answers[gi][fieldName] = value;
+
+  if (type === 'scale') {
+    if (btn) {
+      const parent = btn.closest('.field-group');
+      parent.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+  }
+
+  save(); refreshCard(gi); updateStats();
+}
+
+function setCheckbox(gi, fieldName, option, checked) {
+  ensureAnswer(gi);
+  let arr = Array.isArray(answers[gi][fieldName]) ? answers[gi][fieldName] : [];
+  if (checked) { if (!arr.includes(option)) arr.push(option); }
+  else { arr = arr.filter(v => v !== option); }
+  answers[gi][fieldName] = arr;
+  save(); refreshCard(gi); updateStats();
+}
+
+function refreshCard(gi) {
+  const card = document.getElementById('card-' + gi);
+  if (!card) return;
+  if (isRowCoded(gi)) card.classList.add('coded');
+  else card.classList.remove('coded');
+}
+
+function changePageSize() {
+  pageSize = parseInt(document.getElementById('pageSize').value);
+  currentPage = 1; render();
+}
+
+function goToPage(p) {
+  const total = Math.ceil(allData.length / pageSize);
+  currentPage = Math.max(1, Math.min(p, total || 1));
+  render();
+}
+
+function renderPagination() {
+  const total = Math.ceil(allData.length / pageSize);
+  document.getElementById('pageInfo').textContent = 'Page ' + currentPage + ' of ' + (total || 1);
+  const area = document.getElementById('paginationArea');
+  if (total <= 1) { area.innerHTML = ''; return; }
+  let html = `<button class="pg-btn" onclick="goToPage(1)" ${currentPage===1?'disabled':''}>«</button>
+              <button class="pg-btn" onclick="goToPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
+  pageRange(currentPage, total).forEach(p => {
+    if (p === '...') html += `<span style="padding:0 4px;color:#ccc">…</span>`;
+    else html += `<button class="pg-btn ${p===currentPage?'active':''}" onclick="goToPage(${p})">${p}</button>`;
+  });
+  html += `<button class="pg-btn" onclick="goToPage(${currentPage+1})" ${currentPage===total?'disabled':''}>›</button>
+           <button class="pg-btn" onclick="goToPage(${total})" ${currentPage===total?'disabled':''}>»</button>`;
+  area.innerHTML = html;
+}
+
+function pageRange(cur, total) {
+  if (total <= 7) return Array.from({length: total}, (_, i) => i + 1);
+  if (cur <= 4)   return [1,2,3,4,5,'...',total];
+  if (cur >= total-3) return [1,'...',total-4,total-3,total-2,total-1,total];
+  return [1,'...',cur-1,cur,cur+1,'...',total];
+}
+
+function downloadCSV() {
+  const codingFields = SCHEMA.filter(s => s.role === 'coding');
+  const hasBinary    = codingFields.length === 0;
+  const header = [
+    ...SCHEMA.filter(s => s.role !== 'coding').map(s => s.name),
+    ...(hasBinary ? ['flagged'] : codingFields.map(s => s.name))
+  ];
+  const rows = [header];
+  allData.forEach((row, i) => {
+    const ans = answers[i] || {};
+    const line = [
+      ...SCHEMA.filter(s => s.role !== 'coding').map(s => {
+        const v = row[s.name] ?? '';
+        const str = Array.isArray(v) ? v.join('; ') : String(v);
+        return '"' + str.replace(/"/g, '""') + '"';
+      }),
+      ...(hasBinary
+        ? [ans['_binary'] === 1 ? '1' : '0']
+        : codingFields.map(f => {
+            const v = ans[f.name] ?? '';
+            const str = Array.isArray(v) ? v.join('; ') : String(v);
+            return '"' + str.replace(/"/g, '""') + '"';
+          })
+      )
+    ];
+    rows.push(line);
+  });
+  const csv  = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8'});
+  const a    = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(blob),
+    download: CODER_ID + '_results.csv'
+  });
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+</script>
+</body>
+</html>
